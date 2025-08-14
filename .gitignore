@@ -131,4 +131,6 @@ yarn.lock
 backend/dist/
 backend/build/
 backend/.env
-backend/node_modules/
+backend/node_modules/# Fr
+ontend directory (separate React app)
+Frontend/

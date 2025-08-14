@@ -813,7 +813,7 @@ function createFlexibleTeamObject(members: Participant[]): Team {
   const teamId = `flexible-team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   // Calculate actual compatibility
-  const compatibilityScore = calculateFlexibleCompatibilityScore(members);
+  const compatibilityScore = calculateTeamCompatibilityScore(members);
   
   // Find any common case types
   const allCaseTypes = members.flatMap(m => m.casePreferences);
@@ -912,7 +912,7 @@ function createMatchingResult(originalParticipants: Participant[], teams: Team[]
   };
 }
 
-function calculateFlexibleCompatibilityScore(members: Participant[]): number {
+function calculateTeamCompatibilityScore(members: Participant[]): number {
   if (members.length < 2) return 75;
   
   let totalScore = 0;
@@ -1008,8 +1008,8 @@ function getBackendAvailabilityCompatibility(availability1: string, availability
     'Not available now, but interested later': 0
   };
   
-  const level1 = availabilityLevels[availability1] || 2;
-  const level2 = availabilityLevels[availability2] || 2;
+  const level1 = availabilityLevels[availability1 as keyof typeof availabilityLevels] || 2;
+  const level2 = availabilityLevels[availability2 as keyof typeof availabilityLevels] || 2;
   
   const diff = Math.abs(level1 - level2);
   return Math.max(0, 10 - diff * 3);

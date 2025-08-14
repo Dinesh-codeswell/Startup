@@ -236,7 +236,7 @@ app.post('/analyze-csv', upload.single('csvFile'), async (req, res) => {
       experienceDistribution,
       availabilityDistribution,
       casePreferenceDistribution,
-      potentialMatchingIssues: []
+      potentialMatchingIssues: [] as string[]
     };
 
     // Add potential matching issue warnings

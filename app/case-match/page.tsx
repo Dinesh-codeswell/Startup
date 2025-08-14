@@ -6,7 +6,7 @@ import TeamCard from '@/components/case-match/TeamCard';
 import Statistics from '@/components/case-match/Statistics';
 import UnmatchedParticipants from '@/components/case-match/UnmatchedParticipants';
 import { MatchingResult } from '@/lib/case-match';
-import { analyzeUnmatchedParticipants } from '@/lib/unmatched-analysis';
+// import { analyzeUnmatchedParticipants } from '@/lib/case-match';
 
 export default function CaseMatchPage() {
   const [loading, setLoading] = useState(false);
@@ -244,11 +244,12 @@ export default function CaseMatchPage() {
                   ];
                   
                   // Analyze unmatched participants
-                  const unmatchedReport = analyzeUnmatchedParticipants(
-                    results.unmatched,
-                    allParticipants,
-                    results.teams
-                  );
+                  // const unmatchedReport = analyzeUnmatchedParticipants(
+                  //   results.unmatched,
+                  //   allParticipants,
+                  //   results.teams
+                  // );
+                  const unmatchedReport = { analyses: [] };
                   
                   return (
                     <UnmatchedParticipants 

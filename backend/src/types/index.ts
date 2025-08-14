@@ -15,6 +15,7 @@ export interface Participant {
   workStyle: 'Structured meetings and deadlines' | 'Flexible work with async updates' | 'Combination of both';
   casePreferences: CaseType[];
   preferredTeamSize: 2 | 3 | 4;
+  teamPreference: 'Undergrads only' | 'Postgrads only' | 'Either UG or PG';
 }
 
 export type CoreStrength = 

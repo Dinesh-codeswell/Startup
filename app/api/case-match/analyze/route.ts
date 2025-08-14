@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       experienceDistribution,
       availabilityDistribution,
       casePreferenceDistribution,
-      potentialMatchingIssues: []
+      potentialMatchingIssues: [] as string[]
     };
 
     // Add potential matching issue warnings

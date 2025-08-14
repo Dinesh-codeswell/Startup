@@ -6,12 +6,14 @@ import TeamCard from '@/components/case-match/TeamCard';
 import Statistics from '@/components/case-match/Statistics';
 import UnmatchedParticipants from '@/components/case-match/UnmatchedParticipants';
 import { MatchingResult } from '@/lib/case-match';
-import { analyzeUnmatchedParticipants } from '@/lib/case-match';
+// import { analyzeUnmatchedParticipants } from '@/lib/case-match';
 
 export default function AdminCaseMatchPage() {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<MatchingResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [savingToDB, setSavingToDB] = useState(false);
+    const [savedToDB, setSavedToDB] = useState(false);
 
     const handleFileUpload = async (file: File) => {
         setLoading(true);
@@ -34,10 +36,56 @@ export default function AdminCaseMatchPage() {
             }
 
             setResults(data);
+
+            // Automatically save teams to database
+            if (data.teams && data.teams.length > 0) {
+                await saveTeamsToDatabase(data);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const saveTeamsToDatabase = async (matchingResult: MatchingResult) => {
+        setSavingToDB(true);
+        setSavedToDB(false);
+
+        try {
+            console.log('Saving teams to database...');
+
+            // Get all participants (matched and unmatched)
+            const allParticipants = [
+                ...matchingResult.teams.flatMap(team => team.members),
+                ...matchingResult.unmatched
+            ];
+
+            const response = await fetch('/api/case-match/save-teams', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    teams: matchingResult.teams,
+                    participants: allParticipants
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('✅ Teams saved successfully:', result);
+                setSavedToDB(true);
+            } else {
+                console.error('❌ Failed to save teams:', result.error);
+                setError(`Failed to save teams to database: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('❌ Error saving teams to database:', error);
+            setError('Error saving teams to database');
+        } finally {
+            setSavingToDB(false);
         }
     };
 
@@ -191,8 +239,37 @@ export default function AdminCaseMatchPage() {
                     <div>
                         {/* Action Bar */}
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-bold text-gray-900">Team Matching Results</h2>
+                            <div>
+                                <h2 className="text-3xl font-bold text-gray-900">Team Matching Results</h2>
+                                {/* Database Status Indicators */}
+                                {savingToDB && (
+                                    <div className="flex items-center mt-2 text-blue-600">
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span className="text-sm font-medium">Saving teams to database...</span>
+                                    </div>
+                                )}
+                                {savedToDB && !savingToDB && (
+                                    <div className="flex items-center mt-2 text-green-600">
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-sm font-medium">Teams saved to database successfully!</span>
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex space-x-4">
+                                <a
+                                    href="/team-dashboard"
+                                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Team Dashboard
+                                </a>
                                 <a
                                     href="/rl-dashboard"
                                     className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200 flex items-center"
@@ -200,6 +277,30 @@ export default function AdminCaseMatchPage() {
                                     <span className="mr-2">🧠</span>
                                     RL Dashboard
                                 </a>
+                                {!savedToDB && (
+                                    <button
+                                        onClick={() => saveTeamsToDatabase(results)}
+                                        disabled={savingToDB}
+                                        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {savingToDB ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                Save to Database
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                                 <button
                                     onClick={downloadResults}
                                     className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center"
@@ -213,6 +314,8 @@ export default function AdminCaseMatchPage() {
                                     onClick={() => {
                                         setResults(null);
                                         setError(null);
+                                        setSavedToDB(false);
+                                        setSavingToDB(false);
                                     }}
                                     className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors duration-200"
                                 >
@@ -249,11 +352,12 @@ export default function AdminCaseMatchPage() {
                                     ];
 
                                     // Analyze unmatched participants
-                                    const unmatchedReport = analyzeUnmatchedParticipants(
-                                        results.unmatched,
-                                        allParticipants,
-                                        results.teams
-                                    );
+                                    // const unmatchedReport = analyzeUnmatchedParticipants(
+                                    //     results.unmatched,
+                                    //     allParticipants,
+                                    //     results.teams
+                                    // );
+                                    const unmatchedReport = { analyses: [] };
 
                                     return (
                                         <UnmatchedParticipants

@@ -30,10 +30,10 @@ const nextConfig = {
       };
     }
     
-    // Exclude backend directory from webpack processing
+    // Exclude backend and Frontend directories from webpack processing
     config.watchOptions = {
       ...config.watchOptions,
-      ignored: ['**/backend/**', '**/node_modules/**']
+      ignored: ['**/backend/**', '**/Frontend/**', '**/node_modules/**']
     };
     
     return config;

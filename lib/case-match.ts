@@ -1176,3 +1176,10 @@ function generateStatistics(
     caseTypeDistribution,
   };
 }
+// Re-export from unmatched-analysis for compatibility
+export { 
+  analyzeUnmatchedParticipants,
+  type UnmatchedAnalysis,
+  type UnmatchedReason,
+  type UnmatchedReport
+} from './unmatched-analysis';

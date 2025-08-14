@@ -67,7 +67,7 @@
     "geist": "^1.4.2",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^1.4.5-lts.2",
     "next": "14.2.16",
     "next-themes": "latest",
     "papaparse": "^5.5.3",
@@ -101,3 +101,4 @@
     "typescript": "^5.9.2"
   }
 }
+

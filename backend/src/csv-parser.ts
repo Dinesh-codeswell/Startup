@@ -38,7 +38,8 @@ export async function parseCSVToParticipants(csvData: string): Promise<Participa
             experience: parseExperience(row['Previous Case Comp Experience'] || row['Previous Case Competition Experience'] || ''),
             workStyle: parseWorkStyle(row['Work Style'] || ''), // Provide default for missing column
             casePreferences: parseCasePreferences(row['Case Comp Preferences'] || row['Which type(s) of case competitions are you most interested in?'] || ''),
-            preferredTeamSize: parsePreferredTeamSize(row['Preferred Team Size'] || row['Preferred team size'] || '')
+            preferredTeamSize: parsePreferredTeamSize(row['Preferred Team Size'] || row['Preferred team size'] || ''),
+            teamPreference: parseTeamPreference(row['Team Preference'] || row['Education Level Preference'] || '')
           };
 
           participants.push(participant);
@@ -392,4 +393,21 @@ function parsePreferredTeamSize(value: string): 2 | 3 | 4 {
       normalized.includes('quad')) return 4;
       
   return 4; // Default to 4
+}
+
+function parseTeamPreference(value: string): 'Undergrads only' | 'Postgrads only' | 'Either UG or PG' {
+  if (!value) return 'Either UG or PG'; // Default to mixed
+  const normalized = value.toLowerCase().trim();
+  
+  if (normalized.includes('undergrad') && !normalized.includes('postgrad') && !normalized.includes('pg')) {
+    return 'Undergrads only';
+  }
+  if (normalized.includes('postgrad') || normalized.includes('pg') || normalized.includes('mba')) {
+    return 'Postgrads only';
+  }
+  if (normalized.includes('either') || normalized.includes('both') || normalized.includes('mixed')) {
+    return 'Either UG or PG';
+  }
+  
+  return 'Either UG or PG'; // Default to mixed
 }

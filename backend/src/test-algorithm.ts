@@ -19,7 +19,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Fully Available (10–15 hrs/week)',
     experience: 'Participated in 3+',
     workStyle: 'Structured meetings and deadlines',
-    casePreferences: ['Consulting', 'Product/Tech']
+    casePreferences: ['Consulting', 'Product/Tech'],
+    preferredTeamSize: 3,
+    teamPreference: 'Either UG or PG'
   },
   {
     id: '2',
@@ -36,7 +38,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Fully Available (10–15 hrs/week)',
     experience: 'Participated in 1–2',
     workStyle: 'Structured meetings and deadlines',
-    casePreferences: ['Finance', 'Consulting']
+    casePreferences: ['Finance', 'Consulting'],
+    preferredTeamSize: 4,
+    teamPreference: 'Undergrads only'
   },
   {
     id: '3',
@@ -53,7 +57,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Moderately Available (5–10 hrs/week)',
     experience: 'Finalist/Winner in at least one',
     workStyle: 'Flexible work with async updates',
-    casePreferences: ['Product/Tech', 'Marketing']
+    casePreferences: ['Product/Tech', 'Marketing'],
+    preferredTeamSize: 3,
+    teamPreference: 'Either UG or PG'
   },
   {
     id: '4',
@@ -70,7 +76,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Fully Available (10–15 hrs/week)',
     experience: 'Participated in 1–2',
     workStyle: 'Combination of both',
-    casePreferences: ['Product/Tech', 'Operations/Supply Chain']
+    casePreferences: ['Product/Tech', 'Operations/Supply Chain'],
+    preferredTeamSize: 4,
+    teamPreference: 'Either UG or PG'
   },
   // PG Participants
   {
@@ -88,7 +96,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Fully Available (10–15 hrs/week)',
     experience: 'Finalist/Winner in at least one',
     workStyle: 'Structured meetings and deadlines',
-    casePreferences: ['Consulting', 'Finance']
+    casePreferences: ['Consulting', 'Finance'],
+    preferredTeamSize: 3,
+    teamPreference: 'Postgrads only'
   },
   {
     id: '6',
@@ -105,7 +115,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Moderately Available (5–10 hrs/week)',
     experience: 'Participated in 3+',
     workStyle: 'Flexible work with async updates',
-    casePreferences: ['Marketing', 'Social Impact']
+    casePreferences: ['Marketing', 'Social Impact'],
+    preferredTeamSize: 2,
+    teamPreference: 'Either UG or PG'
   },
   {
     id: '7',
@@ -122,7 +134,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Fully Available (10–15 hrs/week)',
     experience: 'Participated in 1–2',
     workStyle: 'Combination of both',
-    casePreferences: ['Product/Tech', 'Marketing']
+    casePreferences: ['Product/Tech', 'Marketing'],
+    preferredTeamSize: 3,
+    teamPreference: 'Postgrads only'
   },
   {
     id: '8',
@@ -139,7 +153,9 @@ const sampleParticipants: Participant[] = [
     availability: 'Moderately Available (5–10 hrs/week)',
     experience: 'Participated in 3+',
     workStyle: 'Structured meetings and deadlines',
-    casePreferences: ['Product/Tech', 'Operations/Supply Chain']
+    casePreferences: ['Product/Tech', 'Operations/Supply Chain'],
+    preferredTeamSize: 4,
+    teamPreference: 'Postgrads only'
   }
 ];
 

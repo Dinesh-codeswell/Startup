@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase-middleware'
+import { checkRateLimit, getRateLimitConfig, createRateLimitResponse } from '@/lib/rate-limiter'
 
 // Admin configuration - matches the admin-utils.ts configuration
 const AUTHORIZED_ADMIN_EMAILS = [
@@ -139,6 +140,23 @@ export async function middleware(request: NextRequest) {
   // Skip middleware for non-admin routes
   if (!shouldProtectRoute(pathname)) {
     return NextResponse.next()
+  }
+
+  // Apply rate limiting to admin routes
+  const rateLimitConfig = getRateLimitConfig(pathname)
+  const rateLimitResult = checkRateLimit(request, rateLimitConfig)
+  
+  if (!rateLimitResult.allowed) {
+    console.warn(`Rate limit exceeded for admin route: ${pathname}`, {
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
+      retryAfter: rateLimitResult.retryAfter,
+      timestamp: new Date().toISOString()
+    })
+    
+    return createRateLimitResponse(
+      rateLimitResult.retryAfter!,
+      'Too many requests to admin endpoint. Please try again later.'
+    )
   }
 
   try {

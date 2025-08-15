@@ -16,8 +16,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Disable static optimization for problematic pages
-  generateStaticParams: false,
+
   // Webpack configuration
   webpack: (config, { isServer }) => {
     // Ignore backend files during frontend build

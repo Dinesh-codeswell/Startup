@@ -23,13 +23,32 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [logoError, setLogoError] = useState(false)
+  const [returnTo, setReturnTo] = useState<string | null>(null)
+  const [isAdminRequired, setIsAdminRequired] = useState(false)
+  const [adminMessage, setAdminMessage] = useState<string | null>(null)
   const router = useRouter()
   const { user } = useAuth()
 
-  // Redirect if already logged in
+  // Handle URL parameters and redirect logic
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const returnToParam = urlParams.get('returnTo')
+    const reasonParam = urlParams.get('reason')
+    const messageParam = urlParams.get('message')
+    
+    if (returnToParam) {
+      setReturnTo(returnToParam)
+    }
+    
+    if (reasonParam === 'admin_required') {
+      setIsAdminRequired(true)
+      setAdminMessage(messageParam || 'Admin access required')
+    }
+    
+    // Redirect if already logged in
     if (user) {
-      router.push("/")
+      const redirectUrl = returnToParam || "/"
+      router.push(redirectUrl)
     }
   }, [user, router])
 
@@ -42,8 +61,9 @@ export default function LoginPage() {
       const result = await signIn({ email, password })
 
       if (result.user && result.session) {
-        // Successful sign in - redirect to home page
-        router.push("/")
+        // Successful sign in - redirect to return URL or home page
+        const redirectUrl = returnTo || "/"
+        router.push(redirectUrl)
       } else {
         setError("Sign in failed. Please check your credentials.")
       }
@@ -71,7 +91,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}${returnTo || '/'}`,
         },
       })
 
@@ -101,7 +121,12 @@ export default function LoginPage() {
               Beyond Career
             </span>
           </Link>
-          <p className="text-gray-600 mt-4">Welcome back! Please sign in to your account.</p>
+          <p className="text-gray-600 mt-4">
+            {isAdminRequired 
+              ? "Admin access required. Please sign in with an authorized account."
+              : "Welcome back! Please sign in to your account."
+            }
+          </p>
         </div>
 
         <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -109,6 +134,25 @@ export default function LoginPage() {
             <CardTitle className="text-2xl font-bold text-center text-gray-900">Sign In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Admin Required Message */}
+            {isAdminRequired && (
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                <Lock className="h-4 w-4" />
+                <div>
+                  <p className="font-medium">{adminMessage}</p>
+                  <p className="text-xs mt-1">Only authorized admin accounts can access this area.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Return URL Info */}
+            {returnTo && (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm">
+                <p className="font-medium">You'll be redirected to:</p>
+                <p className="text-xs mt-1 font-mono break-all">{returnTo}</p>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">

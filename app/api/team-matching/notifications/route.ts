@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NotificationService } from '@/lib/services/notification-service'
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 export async function POST(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const { action } = await request.json()
     
@@ -35,6 +39,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     // Return notification service status
     return NextResponse.json({

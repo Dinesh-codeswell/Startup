@@ -5,6 +5,8 @@ import { Menu, X, User, LogOut, ChevronDown, Users, UserCheck, Settings } from "
 import { useState, useEffect, useContext } from "react" // Import useContext
 import Link from "next/link"
 import { AuthContext } from "@/contexts/auth-context" // Import AuthContext
+import { useAdmin } from "@/contexts/admin-context" // Import admin context
+import { AdminBadge } from "@/components/admin/AdminBadge" // Import admin badge
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,7 @@ const Header = () => {
   const [logoError, setLogoError] = useState(false)
   const [isCaseMatchOpen, setIsCaseMatchOpen] = useState(false)
   const auth = useContext(AuthContext) // Use useContext directly
+  const { isAdmin, isLoading: adminLoading } = useAdmin() // Get admin status
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -30,6 +33,7 @@ const Header = () => {
     { name: "About", href: "/about" },
   ]
 
+  // Filter case match items based on admin status
   const caseMatchItems = [
     { 
       name: "Find Team", 
@@ -43,12 +47,13 @@ const Header = () => {
       description: "View your team dashboard and chat with teammates",
       icon: UserCheck 
     },
-    { 
+    // Only show admin link to authorized admins
+    ...(isAdmin ? [{ 
       name: "Admin", 
       href: "/admin/dashboard", 
       description: "Manage teams and view analytics",
       icon: Settings 
-    },
+    }] : []),
   ]
 
   useEffect(() => {
@@ -205,6 +210,8 @@ const Header = () => {
                     <User className="h-4 w-4 mr-2" />
                     <span className="hidden xl:inline">{profile?.first_name || "Profile"}</span>
                     <span className="xl:hidden">Profile</span>
+                    {/* Admin badge next to profile name */}
+                    {isAdmin && <AdminBadge variant="compact" className="ml-2" />}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -214,6 +221,18 @@ const Header = () => {
                       My Profile
                     </Link>
                   </DropdownMenuItem>
+                  {/* Admin-only menu items */}
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/dashboard" className="flex items-center">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
                     <LogOut className="h-4 w-4 mr-2" />
@@ -328,8 +347,22 @@ const Header = () => {
                     >
                       <User className="h-4 w-4 mr-2" />
                       My Profile
+                      {/* Admin badge in mobile menu */}
+                      {isAdmin && <AdminBadge variant="compact" className="ml-auto" />}
                     </Button>
                   </Link>
+                  {/* Admin-only mobile menu items */}
+                  {isAdmin && (
+                    <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button
+                        variant="outline"
+                        className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 bg-transparent justify-start py-3 text-base"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Button
                     onClick={() => {
                       handleSignOut()

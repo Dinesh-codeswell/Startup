@@ -11,6 +11,9 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
     "postinstall": "echo 'Dependencies installed successfully'",
     "backend:dev": "cd backend && npm run dev",
     "backend:build": "cd backend && npm run build",
@@ -51,7 +54,8 @@
     "@radix-ui/react-tooltip": "latest",
     "@remix-run/react": "latest",
     "@splinetool/runtime": "latest",
-    "@supabase/supabase-js": "latest",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.45.4",
     "@sveltejs/kit": "latest",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.21",
@@ -67,7 +71,7 @@
     "geist": "^1.4.2",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
-    "multer": "1.4.5-lts.2",
+    "multer": "^1.4.5-lts.1",
     "next": "14.2.16",
     "next-themes": "latest",
     "papaparse": "^5.5.3",
@@ -96,10 +100,10 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/uuid": "^9.0.8",
+    "@vitest/ui": "^3.2.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }
-
-

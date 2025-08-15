@@ -9,11 +9,10 @@ export interface TeamMatchingSubmission {
   email: string
   whatsapp_number: string
   college_name: string
-  course?: string
   current_year: string
   core_strengths: string[]
   preferred_roles: string[]
-  preferred_teammate_roles: string[]
+  team_preference: 'Undergrads only' | 'Postgrads only' | 'Either UG or PG'
   availability: string
   experience: string
   case_preferences: string[]
@@ -104,11 +103,10 @@ export interface TeamMatchingFormData {
   email: string
   whatsappNumber: string
   collegeName: string
-  course?: string
   currentYear: string
   coreStrengths: string[]
   preferredRoles: string[]
-  preferredTeammateRoles: string[]
+  teamPreference: 'Undergrads only' | 'Postgrads only' | 'Either UG or PG'
   availability: string
   experience: string
   casePreferences: string[]

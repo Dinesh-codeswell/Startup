@@ -1,8 +1,9 @@
 'use client'
 
 import { TeamMatchingDashboard } from '@/components/admin/TeamMatchingDashboard'
+import { withAdminProtection } from '@/components/admin/AdminProtection'
 
-export default function AdminDashboardPage() {
+function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -55,3 +56,8 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
+
+// Export the protected component
+export default withAdminProtection(AdminDashboardPage, {
+  redirectTo: '/login'
+})

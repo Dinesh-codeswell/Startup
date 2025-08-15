@@ -6,9 +6,10 @@ import TeamCard from '@/components/case-match/TeamCard';
 import Statistics from '@/components/case-match/Statistics';
 import UnmatchedParticipants from '@/components/case-match/UnmatchedParticipants';
 import { MatchingResult } from '@/lib/case-match';
+import { withAdminProtection } from '@/components/admin/AdminProtection';
 // import { analyzeUnmatchedParticipants } from '@/lib/case-match';
 
-export default function AdminCaseMatchPage() {
+function AdminCaseMatchPage() {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<MatchingResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -513,3 +514,8 @@ export default function AdminCaseMatchPage() {
         </div>
     );
 }
+
+// Export the protected component
+export default withAdminProtection(AdminCaseMatchPage, {
+  redirectTo: '/login'
+})

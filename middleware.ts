@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { updateSession } from '@/lib/supabase-middleware'
 
 // Admin configuration - matches the admin-utils.ts configuration
 const AUTHORIZED_ADMIN_EMAILS = [
@@ -40,46 +40,6 @@ function isAuthorizedAdmin(email: string): boolean {
 }
 
 /**
- * Extract Supabase session from request cookies
- */
-async function getSessionFromCookies(request: NextRequest): Promise<{ email?: string; error?: string }> {
-  try {
-    // Get Supabase configuration
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return { error: 'Supabase configuration missing' }
-    }
-
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
-    
-    // Try to get session from cookies
-    // Next.js middleware doesn't have direct access to the session,
-    // so we need to check for auth tokens in cookies
-    const authToken = request.cookies.get('sb-access-token')?.value ||
-                     request.cookies.get('supabase-auth-token')?.value ||
-                     request.cookies.get('sb-auth-token')?.value
-
-    if (!authToken) {
-      return { error: 'No authentication token found' }
-    }
-
-    // Verify the token by making a request to Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(authToken)
-    
-    if (error || !user || !user.email) {
-      return { error: 'Invalid or expired authentication token' }
-    }
-
-    return { email: user.email }
-  } catch (error) {
-    return { error: `Session verification failed: ${error instanceof Error ? error.message : 'Unknown error'}` }
-  }
-}
-
-/**
  * Check if the current route should be protected
  */
 function shouldProtectRoute(pathname: string): boolean {
@@ -87,6 +47,12 @@ function shouldProtectRoute(pathname: string): boolean {
   if (pathname.startsWith('/admin')) {
     return true
   }
+  
+  // Protect admin-specific page routes
+  const adminPageRoutes = [
+    '/case-match',
+    '/rl-dashboard'
+  ]
   
   // Protect admin-specific API routes
   const adminApiRoutes = [
@@ -99,7 +65,8 @@ function shouldProtectRoute(pathname: string): boolean {
     '/api/rl-metrics'
   ]
   
-  return adminApiRoutes.some(route => pathname.startsWith(route))
+  return adminPageRoutes.some(route => pathname === route) || 
+         adminApiRoutes.some(route => pathname.startsWith(route))
 }
 
 /**
@@ -175,24 +142,24 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get user session from cookies
-    const { email, error } = await getSessionFromCookies(request)
+    // Update session and get user info using proper Supabase SSR
+    const { response, user, error } = await updateSession(request)
     
     // If no valid session, redirect to login
-    if (error || !email) {
-      console.log(`Admin access denied - no valid session: ${error}`)
+    if (error || !user || !user.email) {
+      console.log(`Admin access denied - no valid session: ${error?.message || 'No user found'}`)
       return createUnauthenticatedRedirect(request)
     }
     
     // Check if user is authorized admin
-    if (!isAuthorizedAdmin(email)) {
-      console.log(`Admin access denied - unauthorized email: ${email}`)
-      return createUnauthorizedResponse(request, email)
+    if (!isAuthorizedAdmin(user.email)) {
+      console.log(`Admin access denied - unauthorized email: ${user.email}`)
+      return createUnauthorizedResponse(request, user.email)
     }
     
     // User is authenticated and authorized - allow access
-    console.log(`Admin access granted to: ${email} for ${pathname}`)
-    return NextResponse.next()
+    console.log(`Admin access granted to: ${user.email} for ${pathname}`)
+    return response
     
   } catch (error) {
     console.error('Middleware error:', error)
@@ -208,6 +175,9 @@ export const config = {
   matcher: [
     // Match all admin pages
     '/admin/:path*',
+    // Match admin-specific page routes
+    '/case-match',
+    '/rl-dashboard',
     // Match admin-specific API routes
     '/api/case-match/upload',
     '/api/case-match/analyze',

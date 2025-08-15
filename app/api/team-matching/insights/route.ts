@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EnhancedMatchingFeedbackService } from '@/lib/services/enhanced-matching-feedback'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 export async function GET(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const { searchParams } = new URL(request.url)
     const minCompatibilityScore = parseInt(searchParams.get('minScore') || '80')

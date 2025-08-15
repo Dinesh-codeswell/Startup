@@ -51,11 +51,10 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
     email: "",
     whatsappNumber: "",
     collegeName: "",
-    course: "",
     currentYear: "",
     coreStrengths: [] as string[],
     preferredRoles: [] as string[],
-    preferredTeammateRoles: [] as string[],
+    teamPreference: "",
     availability: "",
     experience: "",
     casePreferences: [] as string[],
@@ -98,15 +97,6 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
         if (currentArray.includes(value)) {
           newArray = currentArray.filter((item) => item !== value)
         } else if (currentArray.length < 2) {
-          newArray = [...currentArray, value]
-        } else {
-          return prev // Don't add if already at limit
-        }
-      } else if (field === "preferredTeammateRoles") {
-        // For preferred teammate roles, limit to 3
-        if (currentArray.includes(value)) {
-          newArray = currentArray.filter((item) => item !== value)
-        } else if (currentArray.length < 3) {
           newArray = [...currentArray, value]
         } else {
           return prev // Don't add if already at limit
@@ -161,8 +151,7 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
         if (formData.coreStrengths.length !== 3) newErrors.coreStrengths = "Please select exactly 3 core strengths"
         break
       case 3:
-        if (formData.preferredTeammateRoles.length === 0)
-          newErrors.preferredTeammateRoles = "Please select at least 1 preferred teammate role (up to 3)"
+        if (!formData.teamPreference) newErrors.teamPreference = "Please select your team preference"
         break
       case 4:
         if (!formData.availability) newErrors.availability = "Please select your availability"
@@ -196,7 +185,7 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
     try {
       // TODO: Replace with actual API call to save to database
       console.log("Form submitted:", formData)
-      
+
       // Simulate API call
       const response = await fetch('/api/team-matching/submit', {
         method: 'POST',
@@ -256,9 +245,8 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   value={formData.fullName}
                   onChange={(e) => handleInputChange("fullName", e.target.value)}
                   placeholder="Enter your full name"
-                  className={`w-full px-4 py-1.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${
-                    errors.fullName ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full px-4 py-1.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.fullName ? "border-red-500" : "border-gray-200"
+                    }`}
                 />
                 {renderError("fullName")}
               </div>
@@ -274,9 +262,8 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email address"
-                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${
-                    errors.email ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.email ? "border-red-500" : "border-gray-200"
+                    }`}
                 />
                 {renderError("email")}
               </div>
@@ -292,9 +279,8 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   value={formData.whatsappNumber}
                   onChange={(e) => handleInputChange("whatsappNumber", e.target.value)}
                   placeholder="Enter your WhatsApp number"
-                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${
-                    errors.whatsappNumber ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.whatsappNumber ? "border-red-500" : "border-gray-200"
+                    }`}
                 />
                 {renderError("whatsappNumber")}
               </div>
@@ -310,9 +296,8 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   value={formData.collegeName}
                   onChange={(e) => handleInputChange("collegeName", e.target.value)}
                   placeholder="Enter your college/university name"
-                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${
-                    errors.collegeName ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.collegeName ? "border-red-500" : "border-gray-200"
+                    }`}
                 />
                 {renderError("collegeName")}
                 <p className="text-xs text-gray-500 mt-1">We encourage inter-college collaboration where possible</p>
@@ -342,10 +327,10 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                 className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Select Year</option>
-                <option value="1st Year">1st Year</option>
-                <option value="2nd Year">2nd Year</option>
-                <option value="3rd Year">3rd Year</option>
-                <option value="4th Year">4th Year</option>
+                <option value="First Year">First Year</option>
+                <option value="Second Year">Second Year</option>
+                <option value="Third Year">Third Year</option>
+                <option value="Final Year">Final Year</option>
                 <option value="PG/MBA (1st Year)">PG/MBA (1st Year)</option>
                 <option value="PG/MBA (2nd Year)">PG/MBA (2nd Year)</option>
               </select>
@@ -374,13 +359,12 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                       key={role.value}
                       onClick={() => handleMultiSelect("preferredRoles", role.value)}
                       disabled={!formData.preferredRoles.includes(role.value) && formData.preferredRoles.length >= 2}
-                      className={`p-4 rounded-xl border-2 transition-all duration-300 text-sm font-medium flex items-center justify-center ${
-                        formData.preferredRoles.includes(role.value)
-                          ? "border-green-500 bg-green-50 text-green-700"
-                          : formData.preferredRoles.length >= 2
-                            ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-                            : "border-gray-200 hover:border-gray-300 text-gray-700"
-                      }`}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 text-sm font-medium flex items-center justify-center ${formData.preferredRoles.includes(role.value)
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : formData.preferredRoles.length >= 2
+                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                          : "border-gray-200 hover:border-gray-300 text-gray-700"
+                        }`}
                     >
                       {role.value}
                     </button>
@@ -427,15 +411,13 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                       key={strength.value}
                       onClick={() => handleMultiSelect("coreStrengths", strength.value)}
                       disabled={isDisabled}
-                      className={`p-4 rounded-xl border-2 transition-all duration-300 text-sm font-medium flex flex-col items-center space-y-2 ${
-                        isLastTwo ? extraClasses : ""
-                      } ${
-                        isSelected
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 text-sm font-medium flex flex-col items-center space-y-2 ${isLastTwo ? extraClasses : ""
+                        } ${isSelected
                           ? "border-green-500 bg-green-50 text-green-700"
                           : isDisabled
                             ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
                             : "border-gray-200 hover:border-gray-300 text-gray-700"
-                      }`}
+                        }`}
                     >
                       <span>{strength.value}</span>
                     </button>
@@ -451,49 +433,59 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
           <div className="space-y-6 pt-6">
             <div className="text-center space-y-3">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent">
-                Preferred Teammate Roles
+                Who do you want on your team?
               </h2>
               <p className="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
-                What roles do you prefer your teammates to have? (Select up to 3)
+                Choose your preferred team composition based on education level
               </p>
             </div>
 
-            <div className="max-w-lg mx-auto">
-              <div className="mb-4 text-center">
-                <span className="text-sm font-medium text-gray-600">
-                  Selected: {formData.preferredTeammateRoles.length}/3
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  "Strong Researcher",
-                  "Creative Thinker",
-                  "Data Expert",
-                  "Great Presenter",
-                  "Strategic Leader",
-                  "Detail-Oriented",
-                  "Problem Solver",
-                  "Team Player",
-                ].map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => handleMultiSelect("preferredTeammateRoles", role)}
-                    disabled={
-                      !formData.preferredTeammateRoles.includes(role) && formData.preferredTeammateRoles.length >= 3
-                    }
-                    className={`p-3 rounded-xl border-2 transition-all duration-300 text-sm font-medium px-3 ${
-                      formData.preferredTeammateRoles.includes(role)
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : formData.preferredTeammateRoles.length >= 3
-                          ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : "border-gray-200 hover:border-gray-300 text-gray-700"
+            <div className="max-w-lg mx-auto space-y-4">
+              {[
+                {
+                  value: "Undergrads only",
+                  label: "Undergrads only",
+                  description: "Team with only undergraduate students"
+                },
+                {
+                  value: "Postgrads only",
+                  label: "Postgrads only",
+                  description: "Team with only postgraduate/MBA students"
+                },
+                {
+                  value: "Either UG or PG",
+                  label: "Either UG or PG",
+                  description: "Mixed team with both undergrad and postgrad students"
+                }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleInputChange("teamPreference", option.value)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left ${formData.teamPreference === option.value
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 hover:border-gray-300"
                     }`}
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
-              {renderError("preferredTeammateRoles")}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${formData.teamPreference === option.value ? "text-green-700" : "text-gray-900"
+                        }`}>
+                        {option.label}
+                      </div>
+                      <div className={`text-sm ${formData.teamPreference === option.value ? "text-green-600" : "text-gray-500"
+                        }`}>
+                        {option.description}
+                      </div>
+                    </div>
+                    {formData.teamPreference === option.value && (
+                      <div className="text-green-500">
+                        <Check />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {renderError("teamPreference")}
             </div>
           </div>
         )
@@ -524,6 +516,7 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                     <option value="Fully Available (10–15 hrs/week)">Fully Available (10–15 hrs/week)</option>
                     <option value="Moderately Available (5–10 hrs/week)">Moderately Available (5–10 hrs/week)</option>
                     <option value="Lightly Available (1–4 hrs/week)">Lightly Available (1–4 hrs/week)</option>
+                    <option value="Not available now, but interested later">Not available now, but interested later</option>
                   </select>
                   <svg
                     className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
@@ -625,13 +618,12 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   key={pref.id}
                   onClick={() => handleMultiSelect("casePreferences", pref.id)}
                   disabled={!formData.casePreferences.includes(pref.id) && formData.casePreferences.length >= 3}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-center ${
-                    formData.casePreferences.includes(pref.id)
-                      ? "border-green-500 bg-green-50 text-green-700"
-                      : formData.casePreferences.length >= 3
-                        ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
+                  className={`p-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-center ${formData.casePreferences.includes(pref.id)
+                    ? "border-green-500 bg-green-50 text-green-700"
+                    : formData.casePreferences.length >= 3
+                      ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
                 >
                   <span className="font-medium">{pref.label}</span>
                 </button>
@@ -665,11 +657,10 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
               <button
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                  currentStep === 0
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                }`}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${currentStep === 0
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
               >
                 <ChevronLeft />
                 <span>Back</span>

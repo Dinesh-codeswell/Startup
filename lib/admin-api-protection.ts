@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from './supabase-admin'
 import { isAuthorizedAdmin } from './admin-utils'
+import { validateSupabaseSession } from './session-security'
+import { logSecurityEvent, detectThreats, isIPBlocked } from './security-monitor'
 
 export interface AdminAPIResponse {
   authorized: boolean
@@ -29,9 +31,42 @@ export interface AdminErrorResponse {
  */
 export async function requireAdminAccess(request: NextRequest): Promise<AdminAPIResponse> {
   try {
+    // Check if IP is blocked
+    const forwarded = request.headers.get('x-forwarded-for')
+    const realIP = request.headers.get('x-real-ip')
+    const cfConnectingIP = request.headers.get('cf-connecting-ip')
+    const ipAddress = forwarded?.split(',')[0].trim() || realIP || cfConnectingIP || 'unknown'
+    
+    if (isIPBlocked(ipAddress)) {
+      logSecurityEvent(request, 'error', 'access', 'blocked_ip_admin_access_attempt', {
+        details: { reason: 'IP blocked due to high risk score' }
+      })
+      return {
+        authorized: false,
+        error: 'Access denied'
+      }
+    }
+
+    // Detect threats in request
+    const { threats, maxRiskScore } = detectThreats(request)
+    if (threats.length > 0) {
+      logSecurityEvent(request, 'warning', 'suspicious', 'threat_detected_admin_access', {
+        details: { threats: threats.map(t => t.name), maxRiskScore }
+      })
+      
+      // Block high-risk requests
+      if (maxRiskScore >= 85) {
+        return {
+          authorized: false,
+          error: 'Request blocked due to security policy'
+        }
+      }
+    }
+
     // Get the authorization header
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logSecurityEvent(request, 'warning', 'auth', 'admin_access_missing_auth_header')
       return {
         authorized: false,
         error: 'No authorization token provided'
@@ -40,23 +75,40 @@ export async function requireAdminAccess(request: NextRequest): Promise<AdminAPI
     
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
     
-    // Verify the JWT token using the admin client
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+    // Enhanced session validation
+    const sessionValidation = await validateSupabaseSession(token, request)
     
-    if (userError || !user) {
+    if (!sessionValidation.valid || !sessionValidation.user) {
+      logSecurityEvent(request, 'warning', 'auth', 'admin_access_invalid_session', {
+        details: { error: sessionValidation.error }
+      })
       return {
         authorized: false,
-        error: 'User not authenticated'
+        error: sessionValidation.error || 'User not authenticated'
       }
     }
+
+    const user = sessionValidation.user
     
     // Check if user email is in authorized admin list
     if (!user.email || !isAuthorizedAdmin(user.email)) {
+      logSecurityEvent(request, 'error', 'access', 'admin_access_unauthorized', {
+        userId: user.id,
+        email: user.email,
+        details: { reason: 'Not in authorized admin list' }
+      })
       return {
         authorized: false,
         error: 'Insufficient permissions - admin access required'
       }
     }
+    
+    // Log successful admin access
+    logSecurityEvent(request, 'info', 'admin', 'admin_access_granted', {
+      userId: user.id,
+      email: user.email,
+      details: { sessionRefresh: sessionValidation.shouldRefresh }
+    })
     
     return {
       authorized: true,
@@ -69,6 +121,9 @@ export async function requireAdminAccess(request: NextRequest): Promise<AdminAPI
     
   } catch (error) {
     console.error('Admin access verification error:', error)
+    logSecurityEvent(request, 'error', 'auth', 'admin_access_verification_error', {
+      details: { error: error instanceof Error ? error.message : 'Unknown error' }
+    })
     return {
       authorized: false,
       error: 'Internal server error during admin verification'
@@ -91,6 +146,7 @@ export function createUnauthorizedResponse(
   requestId?: string
 ): NextResponse {
   const timestamp = new Date().toISOString()
+  const finalRequestId = requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   
   const errorResponses: Record<string, Omit<AdminErrorResponse, 'timestamp' | 'requestId' | 'details'>> = {
     UNAUTHENTICATED: {
@@ -115,22 +171,22 @@ export function createUnauthorizedResponse(
   const errorResponse: AdminErrorResponse = {
     ...baseResponse,
     timestamp,
-    ...(details && { details }),
-    ...(requestId && { requestId })
+    requestId: finalRequestId,
+    ...(details && { details })
   }
   
   const statusCode = type === 'UNAUTHENTICATED' ? 401 : 403
   
-  // Add helpful headers
+  // Add helpful headers with security enhancements
   const headers = new Headers({
     'Content-Type': 'application/json',
     'X-Error-Code': errorResponse.code,
-    'X-Timestamp': timestamp
+    'X-Timestamp': timestamp,
+    'X-Request-ID': finalRequestId,
+    'X-Security-Level': 'HIGH',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache'
   })
-  
-  if (requestId) {
-    headers.set('X-Request-ID', requestId)
-  }
   
   return NextResponse.json(errorResponse, { 
     status: statusCode,
@@ -238,6 +294,13 @@ export async function verifyAdminOrRespond(request: NextRequest): Promise<NextRe
         'UNAUTHENTICATED', 
         'Email verification required',
         'Please verify your email address before accessing admin features.',
+        requestId
+      )
+    } else if (adminCheck.error?.includes('Access denied') || adminCheck.error?.includes('security policy')) {
+      return createUnauthorizedResponse(
+        'FORBIDDEN', 
+        'Security policy violation',
+        `Request blocked by security system. ${adminCheck.error}`,
         requestId
       )
     } else {

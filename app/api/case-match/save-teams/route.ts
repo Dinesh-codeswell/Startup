@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
             current_year: participant.currentYear,
             core_strengths: participant.coreStrengths || [],
             preferred_roles: participant.preferredRoles || [],
-            preferred_teammate_roles: [],
+            team_preference: participant.teamPreference || 'Either UG or PG',
             availability: participant.availability,
             experience: participant.experience,
             case_preferences: participant.casePreferences || [],

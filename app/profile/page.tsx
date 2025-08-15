@@ -10,6 +10,7 @@ import { Header } from "@/components/Header"
 import { Footer } from "@/components/Footer"
 import { useAuth } from "@/contexts/auth-context"
 import { updateProfile } from "@/lib/auth"
+import { ensureUserProfile } from "@/lib/profile-utils"
 
 export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth()
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -107,6 +109,29 @@ export default function ProfilePage() {
     setMessage("")
   }
 
+  const handleCreateProfile = async () => {
+    if (!user) return
+    
+    setIsCreatingProfile(true)
+    setError("")
+    setMessage("")
+    
+    try {
+      const newProfile = await ensureUserProfile(user)
+      if (newProfile) {
+        await refreshProfile()
+        setMessage("Profile created successfully!")
+        setTimeout(() => setMessage(""), 3000)
+      } else {
+        setError("Failed to create profile. Please try again.")
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to create profile")
+    } finally {
+      setIsCreatingProfile(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -118,8 +143,69 @@ export default function ProfilePage() {
     )
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return null
+  }
+
+  // If user exists but no profile, show profile creation form
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="pt-20 pb-16">
+          <div className="container mx-auto px-4 max-w-2xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+              <p className="text-gray-600">Please complete your profile information to continue.</p>
+            </div>
+            <Card className="shadow-lg border-0 bg-white">
+              <CardContent className="p-6">
+                 {/* Error Message */}
+                 {error && (
+                   <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                     <AlertCircle className="h-4 w-4" />
+                     {error}
+                   </div>
+                 )}
+                 
+                 {/* Success Message */}
+                 {message && (
+                   <div className="flex items-center gap-2 p-3 mb-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                     <CheckCircle className="h-4 w-4" />
+                     {message}
+                   </div>
+                 )}
+                 
+                 <div className="text-center py-8">
+                   <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Profile Not Found</h3>
+                   <p className="text-gray-600 mb-6">
+                     It looks like your profile wasn't created properly. This can happen with social sign-ins.
+                   </p>
+                   <div className="flex gap-3 justify-center">
+                     <Button 
+                       onClick={handleCreateProfile}
+                       disabled={isCreatingProfile}
+                       className="bg-blue-600 hover:bg-blue-700 text-white"
+                     >
+                       {isCreatingProfile ? "Creating..." : "Create Profile"}
+                     </Button>
+                     <Button 
+                       onClick={() => window.location.reload()}
+                       variant="outline"
+                       className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                     >
+                       Refresh Page
+                     </Button>
+                   </div>
+                 </div>
+               </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (

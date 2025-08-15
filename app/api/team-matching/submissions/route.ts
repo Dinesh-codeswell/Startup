@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
 import type { TeamMatchingQuery } from '@/lib/types/team-matching'
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 export async function GET(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const { searchParams } = new URL(request.url)
     

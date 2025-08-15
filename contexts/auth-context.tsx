@@ -3,8 +3,9 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 import type { User } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
+import { ensureUserProfile } from "@/lib/profile-utils"
 import type { Profile } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -21,10 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      const profileData = await getProfile(user.id)
+      // First try to get existing profile
+      let profileData = await getProfile(user.id)
+      
+      // If no profile exists, try to create one (especially for OAuth users)
+      if (!profileData) {
+        console.log('No profile found for user, attempting to create one:', user.email)
+        profileData = await ensureUserProfile(user)
+      }
+      
       setProfile(profileData)
     }
   }, [user])

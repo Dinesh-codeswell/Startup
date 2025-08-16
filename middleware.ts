@@ -29,7 +29,7 @@ function getAllAuthorizedEmails(): string[] {
 /**
  * Check if an email is authorized for admin access
  */
-function isAuthorizedAdmin(email: string): boolean {
+export function isAuthorizedAdmin(email: string): boolean {
   if (!email) return false
   
   const normalizedEmail = email.toLowerCase().trim()
@@ -42,32 +42,16 @@ function isAuthorizedAdmin(email: string): boolean {
 
 /**
  * Check if the current route should be protected
+ * ADMIN PROTECTION DISABLED - All routes are now public
  */
 function shouldProtectRoute(pathname: string): boolean {
-  // Protect all admin routes
-  if (pathname.startsWith('/admin')) {
-    return true
-  }
+  // Admin protection has been disabled - all routes are now publicly accessible
+  return false
   
-  // Protect admin-specific page routes
-  const adminPageRoutes = [
-    '/case-match',
-    '/rl-dashboard'
-  ]
-  
-  // Protect admin-specific API routes
-  const adminApiRoutes = [
-    '/api/case-match/upload',
-    '/api/case-match/analyze', 
-    '/api/case-match/save-teams',
-    '/api/team-matching/approve',
-    '/api/team-matching/form-teams',
-    '/api/team-matching/automated-formation',
-    '/api/rl-metrics'
-  ]
-  
-  return adminPageRoutes.some(route => pathname === route) || 
-         adminApiRoutes.some(route => pathname.startsWith(route))
+  // Previously protected routes (now public):
+  // - All admin routes (/admin/*)
+  // - Admin-specific page routes: /case-match, /rl-dashboard
+  // - Admin-specific API routes: /api/case-match/*, /api/team-matching/*, /api/rl-metrics
 }
 
 /**

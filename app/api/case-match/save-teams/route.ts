@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TeamMatchingService } from '@/lib/services/team-matching-db';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { v4 as uuidv4 } from 'uuid';
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection';
+
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const { teams, participants } = await request.json();
     
@@ -16,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`Saving ${teams.length} teams to database...`);
 
-    const savedTeams = [];
-    const savedSubmissions = [];
+    const savedTeams: any[] = [];
+    const savedSubmissions: Array<{participantId: string, submissionId: string}> = [];
 
     // First, save all participants as submissions
     for (const participant of participants) {
@@ -129,7 +136,8 @@ export async function POST(request: NextRequest) {
       const { NotificationService } = await import('@/lib/services/notification-service');
       
       for (const team of savedTeams) {
-        await NotificationService.sendTeamFormationNotifications(team.id);
+        // Note: Using createTeamFormationNotifications for teams array
+        await NotificationService.createTeamFormationNotifications([team]);
       }
       console.log(`📧 Sent notifications for ${savedTeams.length} teams`);
     } catch (notificationError) {

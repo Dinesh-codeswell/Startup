@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
               first_name: data.user.user_metadata?.first_name || data.user.user_metadata?.full_name?.split(' ')[0] || '',
               last_name: data.user.user_metadata?.last_name || data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
               email: data.user.email || '',
-              college_name: data.user.user_metadata?.college_name || ''
+              college_name: data.user.user_metadata?.college_name || '',
+              full_access: data.user.user_metadata?.full_access ?? true
             })
           
           if (insertError) {

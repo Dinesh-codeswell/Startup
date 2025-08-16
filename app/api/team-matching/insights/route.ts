@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EnhancedMatchingFeedbackService } from '@/lib/services/enhanced-matching-feedback'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
-  try {
+  // Admin protection removed - endpoint is now publicly accessible
+  try{
     const { searchParams } = new URL(request.url)
     const minCompatibilityScore = parseInt(searchParams.get('minScore') || '80')
     const includeRecommendations = searchParams.get('recommendations') === 'true'

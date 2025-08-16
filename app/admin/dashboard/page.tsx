@@ -1,7 +1,6 @@
 'use client'
 
 import { TeamMatchingDashboard } from '@/components/admin/TeamMatchingDashboard'
-import { withAdminProtection } from '@/components/admin/AdminProtection'
 
 function AdminDashboardPage() {
   return (
@@ -57,7 +56,5 @@ function AdminDashboardPage() {
   )
 }
 
-// Export the protected component
-export default withAdminProtection(AdminDashboardPage, {
-  redirectTo: '/login'
-})
+// Export the component (admin protection removed - now publicly accessible)
+export default AdminDashboardPage

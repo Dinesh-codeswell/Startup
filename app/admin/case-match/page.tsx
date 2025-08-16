@@ -6,7 +6,6 @@ import TeamCard from '@/components/case-match/TeamCard';
 import Statistics from '@/components/case-match/Statistics';
 import UnmatchedParticipants from '@/components/case-match/UnmatchedParticipants';
 import { MatchingResult } from '@/lib/case-match';
-import { withAdminProtection } from '@/components/admin/AdminProtection';
 // import { analyzeUnmatchedParticipants } from '@/lib/case-match';
 
 function AdminCaseMatchPage() {
@@ -515,7 +514,5 @@ function AdminCaseMatchPage() {
     );
 }
 
-// Export the protected component
-export default withAdminProtection(AdminCaseMatchPage, {
-  redirectTo: '/login'
-})
+// Export the component (admin protection removed - now publicly accessible)
+export default AdminCaseMatchPage

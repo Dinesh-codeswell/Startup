@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseCSVToParticipants } from '@/lib/case-match-parser';
 import { runEnhancedIterativeMatching } from '@/lib/enhanced-iterative-matching';
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection';
+
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const formData = await request.formData();
     const file = formData.get('csvFile') as File;

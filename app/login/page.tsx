@@ -91,7 +91,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `${window.location.origin}${returnTo || '/'}`,
+          redirectTo: `${window.location.origin}/auth/callback${returnTo ? `?redirect_to=${encodeURIComponent(returnTo)}` : ''}`,
         },
       })
 

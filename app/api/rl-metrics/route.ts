@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection';
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs';
@@ -62,9 +61,7 @@ const generateMockRLMetrics = () => {
 };
 
 export async function GET(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'all';
@@ -112,9 +109,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const body = await request.json();
     const { action, session_id, participant_id, reward, q_value } = body;

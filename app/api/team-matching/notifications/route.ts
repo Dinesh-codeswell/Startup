@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NotificationService } from '@/lib/services/notification-service'
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const { action } = await request.json()
     
@@ -42,9 +39,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     // Return notification service status
     return NextResponse.json({

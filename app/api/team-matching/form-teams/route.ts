@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
 import { enhancedIterativeMatching } from '@/lib/enhanced-iterative-matching'
 import type { TeamFormationResponse, TeamMatchingSubmission } from '@/lib/types/team-matching'
+import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
+
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
+  // Verify admin access
+  const adminError = await verifyAdminOrRespond(request);
+  if (adminError) return adminError;
   try {
     const { batch_name = `Batch ${new Date().toISOString()}` } = await request.json()
     
@@ -33,12 +40,12 @@ export async function POST(request: NextRequest) {
       experience: submission.experience,
       casePreferences: submission.case_preferences,
       preferredTeamSize: submission.preferred_team_size,
-      // Map additional fields for compatibility
-      teamPreference: 'Mixed (UG + PG)', // Default value
+      // Map additional fields for compatibility with Participant interface
+      teamPreference: submission.team_preference as 'Undergrads only' | 'Postgrads only' | 'Either UG or PG',
       workingStyle: [], // Default empty array
-      idealTeamStructure: [], // Default empty array
-      lookingFor: submission.preferred_teammate_roles,
-      workStyle: [] // Default empty array
+      idealTeamStructure: '', // Default empty string (not array)
+      lookingFor: '', // Default empty string
+      workStyle: '' // Default empty string (not array)
     }))
 
     // Run the matching algorithm

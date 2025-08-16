@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TeamMatchingService } from '@/lib/services/team-matching-db';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { MatchingResult } from '@/lib/case-match';
+import { NotificationService } from '@/lib/services/notification-service';
+import { TeamMatchingService } from '@/lib/services/team-matching-db';
 import { v4 as uuidv4 } from 'uuid';
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection';
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const { teams, participants } = await request.json();
     

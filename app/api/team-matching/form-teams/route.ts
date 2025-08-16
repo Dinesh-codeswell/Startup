@@ -2,15 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
 import { enhancedIterativeMatching } from '@/lib/enhanced-iterative-matching'
 import type { TeamFormationResponse, TeamMatchingSubmission } from '@/lib/types/team-matching'
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const { batch_name = `Batch ${new Date().toISOString()}` } = await request.json()
     
@@ -50,9 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Run the matching algorithm
     const matchingResult = enhancedIterativeMatching(participantsForMatching, {
-      maxIterations: 30,
-      enableProgressiveRelaxation: true,
-      enableDetailedLogging: true
+      maxIterations: 30
     })
 
     console.log(`Matching algorithm completed: ${matchingResult.teams.length} teams formed, ${matchingResult.unmatched.length} unmatched`)

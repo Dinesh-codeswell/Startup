@@ -3,6 +3,9 @@ import { EnhancedMatchingFeedbackService } from '@/lib/services/enhanced-matchin
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
 import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   // Verify admin access
   const adminError = await verifyAdminOrRespond(request);

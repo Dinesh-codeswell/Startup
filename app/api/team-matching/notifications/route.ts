@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { NotificationService } from '@/lib/services/notification-service'
 import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   // Verify admin access
   const adminError = await verifyAdminOrRespond(request);

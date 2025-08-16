@@ -9,6 +9,7 @@ interface AdminContextType {
   isAdmin: boolean
   isLoading: boolean
   checkAdminStatus: () => Promise<void>
+  refreshAdminStatus: () => Promise<void>
   error?: string
 }
 
@@ -21,35 +22,76 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth()
 
   const checkAdminStatus = useCallback(async () => {
-    try {
-      setIsLoading(true)
+    if (!user?.email || authLoading) {
+      console.log('AdminContext: No user email or auth loading, resetting admin status')
+      setIsAdmin(false)
       setError(undefined)
+      return
+    }
 
-      if (!user?.email) {
-        setIsAdmin(false)
-        return
+    setIsLoading(true)
+    setError(undefined)
+
+    try {
+      console.log('AdminContext: Validating admin session for email:', user.email)
+      
+      // Use the session validation endpoint for more reliable checking
+      const response = await fetch('/api/admin/validate-session', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('AdminContext: Session validation failed - unauthorized')
+          setIsAdmin(false)
+          setError('Session expired or invalid')
+          return
+        }
+        throw new Error(`Validation failed: ${response.status}`)
       }
 
-      // Check if the user's email is in the authorized admin list
-      const adminStatus = isAuthorizedAdmin(user.email)
-      setIsAdmin(adminStatus)
+      const result = await response.json()
+      console.log('AdminContext: Session validation result:', result)
       
-      if (!adminStatus) {
-        setError('Email not authorized for admin access')
+      setIsAdmin(result.isAdmin || false)
+      
+      if (!result.isAdmin) {
+        console.log('AdminContext: User not authorized for admin access:', user.email)
       }
     } catch (err) {
-      console.error('Error checking admin status:', err)
-      setError(err instanceof Error ? err.message : 'Failed to check admin status')
-      setIsAdmin(false)
+      console.error('AdminContext: Error validating admin session:', err)
+      
+      // Fallback to client-side check if API fails
+      console.log('AdminContext: Falling back to client-side admin check')
+      const authorized = isAuthorizedAdmin(user.email)
+      setIsAdmin(authorized)
+      
+      if (!authorized) {
+        setError('Failed to verify admin status')
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [user?.email])
+  }, [user?.email, authLoading])
 
   // Check admin status when user changes or component mounts
   useEffect(() => {
-    if (!authLoading) {
-      checkAdminStatus()
+    if (!authLoading && user?.email) {
+      // Add a small delay to ensure session is fully established
+      const timer = setTimeout(() => {
+        checkAdminStatus()
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    } else if (!authLoading && !user) {
+      // User is not authenticated, reset admin status immediately
+      setIsAdmin(false)
+      setError(undefined)
+      setIsLoading(false)
     }
   }, [user?.email, authLoading, checkAdminStatus])
 
@@ -66,6 +108,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     isAdmin,
     isLoading: isLoading || authLoading,
     checkAdminStatus,
+    refreshAdminStatus: checkAdminStatus,
     error
   }
 

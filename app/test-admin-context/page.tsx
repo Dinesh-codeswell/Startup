@@ -1,7 +1,6 @@
 "use client"
 
 import { AdminExample } from "@/components/admin/AdminExample"
-import { withAdminProtection } from "@/components/admin/AdminProtection"
 
 function TestAdminContextPage() {
   return (
@@ -14,7 +13,5 @@ function TestAdminContextPage() {
   )
 }
 
-// Export the protected component
-export default withAdminProtection(TestAdminContextPage, {
-  redirectTo: '/login'
-})
+// Export the component (admin protection removed - now publicly accessible)
+export default TestAdminContextPage

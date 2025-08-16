@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AutomatedTeamFormationService } from '@/lib/services/automated-team-formation'
 import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
+// Force dynamic rendering for admin routes
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   // Verify admin access
   const adminError = await verifyAdminOrRespond(request);

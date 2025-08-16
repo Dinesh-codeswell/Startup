@@ -37,7 +37,8 @@ export async function createProfileForUser(user: User): Promise<Profile | null> 
         first_name: firstName,
         last_name: lastName,
         email: user.email || '',
-        college_name: collegeName
+        college_name: collegeName,
+        full_access: user.user_metadata?.full_access ?? true
       })
       .select()
       .single()

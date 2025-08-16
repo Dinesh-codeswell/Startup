@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { ComponentType, useEffect } from "react"
+import { ComponentType, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAdmin } from "@/contexts/admin-context"
 import { useAuth } from "@/contexts/auth-context"
@@ -24,24 +24,95 @@ export function AdminProtection({
   loadingMessage = "Verifying admin access...",
   showError = true
 }: AdminProtectionProps) {
-  const { isAdmin, isLoading, error } = useAdmin()
+  const { isAdmin, isLoading, error, checkAdminStatus } = useAdmin()
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const [hasRedirected, setHasRedirected] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+  const [isRetrying, setIsRetrying] = useState(false)
+
+  const maxRetries = 3
+  const totalLoading = isLoading || authLoading || isRetrying
+
+  // Enhanced admin status check with retry logic and session refresh
+  useEffect(() => {
+    if (!totalLoading && !hasRedirected && user && !isAdmin && retryCount < maxRetries) {
+      // If user is authenticated but not admin, retry checking admin status
+      // This helps with timing issues where the session might not be fully established
+      console.log(`AdminProtection: Retrying admin status check (attempt ${retryCount + 1}/${maxRetries})`, {
+        userEmail: user.email,
+        isAdmin,
+        error
+      })
+      
+      setIsRetrying(true)
+      const timer = setTimeout(async () => {
+        try {
+          // Try session refresh on the last attempt
+          if (retryCount === maxRetries - 1) {
+            console.log('AdminProtection: Attempting session refresh on final retry')
+            try {
+              const refreshResponse = await fetch('/api/admin/validate-session', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              
+              if (refreshResponse.ok) {
+                const refreshResult = await refreshResponse.json()
+                console.log('AdminProtection: Session refresh result:', refreshResult)
+              }
+            } catch (refreshError) {
+              console.error('AdminProtection: Session refresh failed:', refreshError)
+            }
+          }
+          
+          if (checkAdminStatus) {
+            await checkAdminStatus()
+          }
+          setRetryCount(prev => prev + 1)
+        } catch (error) {
+          console.error('AdminProtection: Error during retry:', error)
+          setRetryCount(prev => prev + 1)
+        } finally {
+          setIsRetrying(false)
+        }
+      }, 1000 * (retryCount + 1)) // Exponential backoff: 1s, 2s, 3s
+      
+      return () => clearTimeout(timer)
+    }
+  }, [user, isAdmin, totalLoading, hasRedirected, retryCount, checkAdminStatus, error])
 
   useEffect(() => {
     // If not loading and user is not authenticated, redirect to login
-    if (!authLoading && !user && redirectTo) {
-      router.push(redirectTo)
+    if (!authLoading && !user && redirectTo && !hasRedirected) {
+      // Get current URL to preserve as return URL
+      const currentUrl = window.location.pathname + window.location.search
+      const loginUrl = `${redirectTo}?returnTo=${encodeURIComponent(currentUrl)}&reason=admin_required&message=${encodeURIComponent('Admin access required')}`
+      console.log('AdminProtection: Redirecting to login:', loginUrl)
+      setHasRedirected(true)
+      router.push(loginUrl)
     }
-  }, [user, authLoading, redirectTo, router])
+  }, [user, authLoading, redirectTo, router, hasRedirected])
 
   // Show loading state while checking authentication and admin status
-  if (isLoading || authLoading) {
-    return <AdminLoadingState message={loadingMessage} />
+  if (totalLoading) {
+    const loadingText = isRetrying 
+      ? `Verifying admin access... (${retryCount + 1}/${maxRetries})`
+      : loadingMessage
+      
+    return (
+      <AdminLoadingState 
+        message={loadingText} 
+        showRetryInfo={isRetrying}
+      />
+    )
   }
 
   // Show error state if there's an error and showError is true
-  if (error && showError) {
+  if (error && showError && retryCount >= maxRetries) {
     return <AdminErrorState error={error} />
   }
 
@@ -53,9 +124,19 @@ export function AdminProtection({
     return <>{fallback}</>
   }
 
-  // If user is authenticated but not admin, show access denied
-  if (!isAdmin) {
+  // If user is authenticated but not admin, show access denied (only after retries)
+  if (!isAdmin && retryCount >= maxRetries) {
     return <>{fallback}</>
+  }
+
+  // If still retrying, show loading
+  if (!isAdmin && retryCount < maxRetries) {
+    return (
+      <AdminLoadingState 
+        message={`Verifying admin access... (${retryCount + 1}/${maxRetries})`}
+        showRetryInfo={true}
+      />
+    )
   }
 
   // User is authenticated and is admin, show protected content
@@ -95,13 +176,24 @@ export function withAdminProtection<T extends object>(
 /**
  * Loading state component for admin checks
  */
-function AdminLoadingState({ message = "Verifying admin access..." }: { message?: string }) {
+function AdminLoadingState({ 
+  message = "Verifying admin access...", 
+  showRetryInfo = false 
+}: { 
+  message?: string
+  showRetryInfo?: boolean
+}) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center max-w-md mx-auto p-6">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-6"></div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
         <p className="text-gray-600">{message}</p>
+        {showRetryInfo && (
+          <p className="text-sm text-gray-500 mt-2">
+            Ensuring session is properly established...
+          </p>
+        )}
         <div className="mt-4">
           <div className="flex justify-center space-x-1">
             <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>

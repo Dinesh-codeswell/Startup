@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { verifyAdminOrRespond } from '@/lib/admin-api-protection'
 
 // Force dynamic rendering for admin routes
 export const runtime = 'nodejs'
@@ -24,9 +23,7 @@ interface ApproveTeamResponse {
 }
 
 export async function POST(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const body: ApproveTeamRequest = await request.json()
     
@@ -142,9 +139,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // Verify admin access
-  const adminError = await verifyAdminOrRespond(request);
-  if (adminError) return adminError;
+  // Admin protection removed - endpoint is now publicly accessible
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'pending'

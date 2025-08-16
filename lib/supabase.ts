@@ -11,6 +11,7 @@ export type Profile = {
   last_name: string
   email: string
   college_name: string
+  full_access: boolean
   created_at: string
   updated_at: string
 }

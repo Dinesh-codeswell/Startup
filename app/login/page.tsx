@@ -88,16 +88,32 @@ export default function LoginPage() {
     setError("")
 
     try {
+      // Construct the callback URL with proper redirect handling
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      if (returnTo) {
+        callbackUrl.searchParams.set('redirect_to', returnTo)
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback${returnTo ? `?redirect_to=${encodeURIComponent(returnTo)}` : ''}`,
+          redirectTo: callbackUrl.toString(),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         },
       })
 
-      if (error) throw error
+      if (error) {
+        console.error(`OAuth ${provider} error:`, error)
+        throw error
+      }
+
+      // Don't set loading to false here as the user will be redirected
     } catch (err: any) {
-      setError(err.message || `Error signing in with ${provider}`)
+      console.error(`Social login error with ${provider}:`, err)
+      setError(err.message || `Error signing in with ${provider}. Please try again.`)
       setIsLoading(false)
     }
   }

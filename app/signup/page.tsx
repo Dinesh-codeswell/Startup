@@ -131,16 +131,30 @@ export default function SignupPage() {
     setError("")
 
     try {
+      // Construct the callback URL to redirect to home page after signup
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      callbackUrl.searchParams.set('redirect_to', '/')
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl.toString(),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         },
       })
 
-      if (error) throw error
+      if (error) {
+        console.error(`OAuth ${provider} error:`, error)
+        throw error
+      }
+
+      // Don't set loading to false here as the user will be redirected
     } catch (err: any) {
-      setError(err.message || `Error signing up with ${provider}`)
+      console.error(`Social signup error with ${provider}:`, err)
+      setError(err.message || `Error signing up with ${provider}. Please try again.`)
       setIsLoading(false)
     }
   }

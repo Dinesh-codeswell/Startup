@@ -2,8 +2,14 @@
 
 import { useState } from "react"
 
-// Generate a simple UUID v4
+// Generate a proper UUID v4
 const generateUUID = () => {
+  // Use crypto.randomUUID if available (modern browsers)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  
+  // Fallback to manual generation
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0
     const v = c === "x" ? r : (r & 0x3) | 0x8
@@ -45,6 +51,7 @@ interface TeamMatchingQuestionnaireProps {
 export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaireProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     id: generateUUID(),
     fullName: "",
@@ -182,11 +189,15 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
   }
 
   const handleSubmit = async () => {
-    try {
-      // TODO: Replace with actual API call to save to database
-      console.log("Form submitted:", formData)
+    if (!validateStep()) {
+      return
+    }
 
-      // Simulate API call
+    setIsSubmitting(true)
+
+    try {
+      console.log("Submitting form data:", formData)
+
       const response = await fetch('/api/team-matching/submit', {
         method: 'POST',
         headers: {
@@ -195,15 +206,36 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
         body: JSON.stringify(formData),
       })
 
-      if (response.ok) {
-        alert("Team matching questionnaire submitted successfully! We'll notify you when a perfect match is found.")
+      const responseData = await response.json()
+      console.log("API response:", responseData)
+
+      if (response.ok && responseData.success) {
+        alert("🎉 Team matching questionnaire submitted successfully! We'll notify you when a perfect match is found.")
         onClose()
       } else {
-        throw new Error('Failed to submit questionnaire')
+        // Handle specific error cases
+        let errorMessage = "There was an error submitting your questionnaire."
+        
+        if (responseData.error) {
+          if (responseData.error.includes("duplicate") || responseData.error.includes("already exists")) {
+            errorMessage = "An active submission already exists for this email address. Please use a different email or contact support."
+          } else if (responseData.error.includes("required field")) {
+            errorMessage = `Please fill in all required fields: ${responseData.error}`
+          } else if (responseData.error.includes("team size")) {
+            errorMessage = "Please select a valid team size (2-4 members)."
+          } else {
+            errorMessage = `Submission failed: ${responseData.error}`
+          }
+        }
+        
+        alert(errorMessage)
+        console.error('Submission failed:', responseData)
       }
     } catch (error) {
-      console.error('Error submitting questionnaire:', error)
-      alert("There was an error submitting your questionnaire. Please try again.")
+      console.error('Network error submitting questionnaire:', error)
+      alert("Network error: Please check your internet connection and try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -669,10 +701,24 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
               {currentStep === totalSteps - 1 ? (
                 <button
                   onClick={handleSubmit}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl px-3.5 py-2"
+                  disabled={isSubmitting}
+                  className={`flex items-center space-x-2 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl px-3.5 py-2 ${
+                    isSubmitting 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
+                  }`}
                 >
-                  <span>Submit & Find Team</span>
-                  <ChevronRight />
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Submit & Find Team</span>
+                      <ChevronRight />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button

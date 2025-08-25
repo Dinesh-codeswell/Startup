@@ -136,13 +136,39 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Team Matching Dashboard</h1>
-        <Button 
-          onClick={handleFormTeams}
-          disabled={formingTeams || (submissions.length === 0)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {formingTeams ? 'Forming Teams...' : `Form Teams (${submissions.length} pending)`}
-        </Button>
+        <div className="flex space-x-3">
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/team-matching/test-data', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'create' })
+                })
+                const data = await response.json()
+                if (data.success) {
+                  alert(`Created ${data.data.created} test submissions`)
+                  await loadDashboardData()
+                } else {
+                  alert(`Error: ${data.error}`)
+                }
+              } catch (error) {
+                alert('Failed to create test data')
+              }
+            }}
+            variant="outline"
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+          >
+            Add Test Data
+          </Button>
+          <Button 
+            onClick={handleFormTeams}
+            disabled={formingTeams || (submissions.length === 0)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {formingTeams ? 'Forming Teams...' : `Form Teams (${submissions.length} pending)`}
+          </Button>
+        </div>
       </div>
 
       {/* Error Display */}
@@ -205,8 +231,37 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
         </CardHeader>
         <CardContent>
           {submissions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No pending submissions found
+            <div className="text-center py-8">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="text-lg font-medium text-gray-900 mb-2">No pending submissions found</p>
+                <p className="text-gray-600 mb-4">There are currently no participants waiting to be matched into teams.</p>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/team-matching/test-data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'create' })
+                      })
+                      const data = await response.json()
+                      if (data.success) {
+                        alert(`Created ${data.data.created} test submissions`)
+                        await loadDashboardData()
+                      } else {
+                        alert(`Error: ${data.error}`)
+                      }
+                    } catch (error) {
+                      alert('Failed to create test data')
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Create Test Submissions
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">

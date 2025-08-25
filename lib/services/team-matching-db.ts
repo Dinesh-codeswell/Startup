@@ -42,6 +42,12 @@ export class TeamMatchingService {
       status: 'pending_match' as const
     }
 
+    console.log('Attempting to insert team matching submission:', {
+      id: submissionData.id,
+      email: submissionData.email,
+      userId: userId || 'anonymous'
+    })
+
     const { data, error } = await supabaseAdmin
       .from('team_matching_submissions')
       .insert(submissionData)
@@ -50,8 +56,25 @@ export class TeamMatchingService {
 
     if (error) {
       console.error('Error submitting team matching form:', error)
-      throw new Error(`Failed to submit team matching form: ${error.message}`)
+      console.error('Submission data:', submissionData)
+      
+      // Provide more specific error messages
+      if (error.message.includes('row-level security policy')) {
+        throw new Error('Database security policy error. Please ensure you are logged in or contact support.')
+      } else if (error.message.includes('duplicate key')) {
+        throw new Error('A submission with this ID already exists. Please try again.')
+      } else if (error.message.includes('invalid input syntax for type uuid')) {
+        throw new Error('Invalid submission ID format. Please refresh the page and try again.')
+      } else {
+        throw new Error(`Failed to submit team matching form: ${error.message}`)
+      }
     }
+
+    console.log('Team matching submission successful:', {
+      id: data.id,
+      email: data.email,
+      status: data.status
+    })
 
     return data
   }
@@ -293,15 +316,75 @@ export class TeamMatchingService {
    * Get team matching statistics
    */
   static async getTeamMatchingStats(): Promise<TeamMatchingStats> {
-    const { data, error } = await supabaseAdmin
-      .rpc('get_team_matching_stats')
+    try {
+      // Try to use the database function first
+      const { data, error } = await supabaseAdmin
+        .rpc('get_team_matching_stats')
 
-    if (error) {
-      console.error('Error fetching team matching stats:', error)
-      throw new Error(`Failed to fetch statistics: ${error.message}`)
+      if (!error && data) {
+        return data[0] || this.getDefaultStats()
+      }
+    } catch (error) {
+      console.log('Database function not available, calculating stats manually...')
     }
 
-    return data[0] || {
+    // Fallback: Calculate stats manually
+    try {
+      // Get submission counts by status
+      const { data: submissions, error: submissionsError } = await supabaseAdmin
+        .from('team_matching_submissions')
+        .select('status')
+
+      if (submissionsError) {
+        console.error('Error fetching submissions for stats:', submissionsError)
+        return this.getDefaultStats()
+      }
+
+      // Get team counts
+      const { data: teams, error: teamsError } = await supabaseAdmin
+        .from('teams')
+        .select('team_size, compatibility_score, status')
+
+      if (teamsError) {
+        console.error('Error fetching teams for stats:', teamsError)
+      }
+
+      // Calculate statistics
+      const totalSubmissions = submissions?.length || 0
+      const pendingSubmissions = submissions?.filter(s => s.status === 'pending_match').length || 0
+      const matchedSubmissions = submissions?.filter(s => s.status === 'team_formed').length || 0
+      const totalTeams = teams?.length || 0
+      const activeTeams = teams?.filter(t => t.status === 'active').length || 0
+      
+      const avgTeamSize = totalTeams > 0 
+        ? (teams?.reduce((sum, t) => sum + (t.team_size || 0), 0) || 0) / totalTeams 
+        : 0
+
+      const avgCompatibilityScore = totalTeams > 0
+        ? (teams?.reduce((sum, t) => sum + (t.compatibility_score || 0), 0) || 0) / totalTeams
+        : 0
+
+      return {
+        total_submissions: totalSubmissions,
+        pending_submissions: pendingSubmissions,
+        matched_submissions: matchedSubmissions,
+        total_teams: totalTeams,
+        active_teams: activeTeams,
+        avg_team_size: Math.round(avgTeamSize * 10) / 10,
+        avg_compatibility_score: Math.round(avgCompatibilityScore * 10) / 10
+      }
+
+    } catch (error) {
+      console.error('Error calculating team matching stats manually:', error)
+      return this.getDefaultStats()
+    }
+  }
+
+  /**
+   * Get default stats when database is not available
+   */
+  private static getDefaultStats(): TeamMatchingStats {
+    return {
       total_submissions: 0,
       pending_submissions: 0,
       matched_submissions: 0,

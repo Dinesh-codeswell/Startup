@@ -52,11 +52,26 @@ export async function POST(request: NextRequest) {
       } as TeamMatchingSubmissionResponse, { status: 400 })
     }
 
-    // Check for duplicate email
+    // Check for duplicate submissions
     const existingSubmissions = await TeamMatchingService.getSubmissions({
       status: 'pending_match'
     })
     
+    // If user is authenticated, check by user ID first
+    if (formData.userId) {
+      const duplicateUser = existingSubmissions.find(
+        submission => submission.user_id === formData.userId
+      )
+      
+      if (duplicateUser) {
+        return NextResponse.json({
+          success: false,
+          error: 'You already have an active submission. Please wait for team matching or contact support to update your submission.'
+        } as TeamMatchingSubmissionResponse, { status: 409 })
+      }
+    }
+    
+    // Also check by email to prevent duplicate emails
     const duplicateEmail = existingSubmissions.find(
       submission => submission.email.toLowerCase() === formData.email.toLowerCase()
     )
@@ -68,8 +83,8 @@ export async function POST(request: NextRequest) {
       } as TeamMatchingSubmissionResponse, { status: 409 })
     }
 
-    // Save to database
-    const savedSubmission = await TeamMatchingService.submitTeamMatchingForm(formData)
+    // Save to database with user ID
+    const savedSubmission = await TeamMatchingService.submitTeamMatchingForm(formData, formData.userId)
     
     // TODO: In future iterations, add:
     // 1. Send confirmation email

@@ -6,14 +6,86 @@ import { Progress } from "@/components/ui/progress"
 import { Target, Lightbulb, Users, Trophy, ArrowRight } from "lucide-react"
 import { Header } from "@/components/Header"
 import { Footer } from "@/components/Footer"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
 import { TeamMatchingQuestionnaire } from "@/components/team-matching-questionnaire"
 
 export default function TeamPage() {
+  const { user, loading: authLoading } = useAuth()
   const [showQuestionnaire, setShowQuestionnaire] = useState(false)
 
+  // Auto-redirect to questionnaire if user is signed in
+  useEffect(() => {
+    if (!authLoading && user) {
+      setShowQuestionnaire(true)
+    }
+  }, [user, authLoading])
+
   if (showQuestionnaire) {
-    return <TeamMatchingQuestionnaire onClose={() => setShowQuestionnaire(false)} />
+    return (
+      <TeamMatchingQuestionnaire 
+        onClose={() => setShowQuestionnaire(false)}
+        onSubmitSuccess={() => {
+          // Redirect to homepage after successful submission
+          window.location.href = '/'
+        }}
+      />
+    )
+  }
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <div className="pt-24 pb-16 px-4">
+          <div className="container mx-auto text-center max-w-4xl">
+            <div className="flex items-center justify-center mb-6">
+              <Users className="h-6 w-6 text-teal-600 mr-2" />
+              <span className="text-teal-600 font-medium">Team Matching Platform</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">Find Your Perfect Team</h1>
+
+            <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Sign in to get matched with like-minded individuals based on your skills, interests, and goals.
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto mb-8">
+              <p className="text-blue-800 font-medium mb-4">Sign in required</p>
+              <p className="text-blue-700 text-sm mb-4">
+                You need to be signed in to access the team matching questionnaire.
+              </p>
+              <Button
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold rounded-lg w-full"
+                onClick={() => window.location.href = '/login?returnTo=' + encodeURIComponent('/team')}
+              >
+                Sign In to Continue
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+
+            <p className="text-gray-500 text-sm">
+              Don't have an account? <a href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">Sign up here</a>
+            </p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 // Generate a proper UUID v4
 const generateUUID = () => {
@@ -46,12 +47,15 @@ const AlertCircle = ({ className = "" }) => (
 
 interface TeamMatchingQuestionnaireProps {
   onClose: () => void
+  onSubmitSuccess?: () => void
 }
 
-export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaireProps) {
+export function TeamMatchingQuestionnaire({ onClose, onSubmitSuccess }: TeamMatchingQuestionnaireProps) {
+  const { user, profile, loading: authLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const [formData, setFormData] = useState({
     id: generateUUID(),
     fullName: "",
@@ -67,6 +71,23 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
     casePreferences: [] as string[],
     preferredTeamSize: "",
   })
+
+  // Initialize form data with user profile information
+  useEffect(() => {
+    if (!authLoading && user && !isInitialized) {
+      const firstName = profile?.first_name?.trim() || ""
+      const lastName = profile?.last_name?.trim() || ""
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : ""
+      
+      setFormData(prev => ({
+        ...prev,
+        fullName: fullName,
+        email: profile?.email || user.email || "",
+        collegeName: profile?.college_name?.trim() || "",
+      }))
+      setIsInitialized(true)
+    }
+  }, [user, profile, authLoading, isInitialized])
 
   const totalSteps = 6
   const progressPercentage = ((currentStep + 1) / totalSteps) * 100
@@ -144,9 +165,9 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
 
     switch (currentStep) {
       case 0:
-        if (!formData.fullName.trim()) newErrors.fullName = "Full name is required"
-        if (!formData.email.trim()) newErrors.email = "Email is required"
         if (!formData.whatsappNumber.trim()) newErrors.whatsappNumber = "WhatsApp number is required"
+        if (!formData.fullName.trim()) newErrors.fullName = "Full name is required"
+        if (!formData.email.trim()) newErrors.email = "Email address is required"
         if (!formData.collegeName.trim()) newErrors.collegeName = "College name is required"
         break
       case 1:
@@ -193,17 +214,28 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
       return
     }
 
+    if (!user) {
+      setErrors({ submit: "You must be signed in to submit the questionnaire" })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      console.log("Submitting form data:", formData)
+      // Include user ID in the submission data
+      const submissionData = {
+        ...formData,
+        userId: user.id, // Add the authenticated user's ID
+      }
+
+      console.log("Submitting form data:", submissionData)
 
       const response = await fetch('/api/team-matching/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       })
 
       const responseData = await response.json()
@@ -211,7 +243,13 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
 
       if (response.ok && responseData.success) {
         alert("🎉 Team matching questionnaire submitted successfully! We'll notify you when a perfect match is found.")
-        onClose()
+        
+        // Call the success callback if provided, otherwise redirect to homepage
+        if (onSubmitSuccess) {
+          onSubmitSuccess()
+        } else {
+          window.location.href = '/'
+        }
       } else {
         // Handle specific error cases
         let errorMessage = "There was an error submitting your questionnaire."
@@ -251,6 +289,61 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
     return null
   }
 
+  // Show authentication required message if not logged in
+  if (!authLoading && !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden p-8 text-center">
+            <div className="mb-6">
+              <svg className="w-16 h-16 mx-auto text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+              <p className="text-gray-600 mb-6">
+                Please sign in to access the team matching questionnaire. We'll automatically fill in your profile information to make the process faster.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.href = '/login?returnTo=' + encodeURIComponent(window.location.pathname)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => window.location.href = '/signup'}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-300"
+              >
+                Create Account
+              </button>
+              <button
+                onClick={onClose}
+                className="w-full text-gray-500 hover:text-gray-700 font-medium py-2 transition-colors duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your profile...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -263,12 +356,20 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
               <p className="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
                 Let's find you the perfect teammates for case competitions
               </p>
+              {user && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-w-md mx-auto">
+                  <p className="text-green-700 text-sm">
+                    ✅ Signed in as <strong>{profile?.first_name || user.email}</strong>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 max-w-md mx-auto">
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="fullName">
                   Full Name *
+                  {formData.fullName && <span className="text-xs text-blue-600 ml-2">(from your profile)</span>}
                 </label>
                 <input
                   id="fullName"
@@ -276,16 +377,26 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => handleInputChange("fullName", e.target.value)}
-                  placeholder="Enter your full name"
-                  className={`w-full px-4 py-1.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.fullName ? "border-red-500" : "border-gray-200"
-                    }`}
+                  readOnly={!!formData.fullName}
+                  placeholder={!formData.fullName ? "Enter your full name" : ""}
+                  className={`w-full px-4 py-1.5 border rounded-xl ${
+                    formData.fullName 
+                      ? "bg-gray-50 text-gray-700 cursor-not-allowed border-gray-200" 
+                      : "bg-white text-gray-900 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  } ${errors.fullName ? "border-red-500" : ""}`}
                 />
+                {formData.fullName && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    This information is from your profile and cannot be edited here
+                  </p>
+                )}
                 {renderError("fullName")}
               </div>
 
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="email">
                   Email ID *
+                  {formData.email && <span className="text-xs text-blue-600 ml-2">(from your profile)</span>}
                 </label>
                 <input
                   id="email"
@@ -293,10 +404,19 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="Enter your email address"
-                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.email ? "border-red-500" : "border-gray-200"
-                    }`}
+                  readOnly={!!formData.email}
+                  placeholder={!formData.email ? "Enter your email address" : ""}
+                  className={`w-full px-4 py-2 border rounded-xl ${
+                    formData.email 
+                      ? "bg-gray-50 text-gray-700 cursor-not-allowed border-gray-200" 
+                      : "bg-white text-gray-900 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  } ${errors.email ? "border-red-500" : ""}`}
                 />
+                {formData.email && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is your account email and cannot be changed
+                  </p>
+                )}
                 {renderError("email")}
               </div>
 
@@ -320,6 +440,7 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="collegeName">
                   College Name *
+                  {formData.collegeName && <span className="text-xs text-blue-600 ml-2">(from your profile)</span>}
                 </label>
                 <input
                   id="collegeName"
@@ -327,12 +448,15 @@ export function TeamMatchingQuestionnaire({ onClose }: TeamMatchingQuestionnaire
                   type="text"
                   value={formData.collegeName}
                   onChange={(e) => handleInputChange("collegeName", e.target.value)}
-                  placeholder="Enter your college/university name"
-                  className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-300 ${errors.collegeName ? "border-red-500" : "border-gray-200"
-                    }`}
+                  readOnly={!!formData.collegeName}
+                  placeholder={!formData.collegeName ? "Enter your college name" : ""}
+                  className={`w-full px-4 py-2 border rounded-xl ${
+                    formData.collegeName 
+                      ? "bg-gray-50 text-gray-700 cursor-not-allowed border-gray-200" 
+                      : "bg-white text-gray-900 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  } ${errors.collegeName ? "border-red-500" : ""}`}
                 />
                 {renderError("collegeName")}
-                <p className="text-xs text-gray-500 mt-1">We encourage inter-college collaboration where possible</p>
               </div>
             </div>
           </div>

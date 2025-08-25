@@ -34,11 +34,14 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
         setStats(statsData.data)
       }
 
-      // Load pending submissions
-      const submissionsResponse = await fetch('/api/team-matching/submissions?status=pending_match&limit=50')
+      // Load truly unmatched participants (not in any team)
+      const submissionsResponse = await fetch('/api/team-matching/unmatched-submissions')
       if (submissionsResponse.ok) {
         const submissionsData = await submissionsResponse.json()
-        setSubmissions(submissionsData.data)
+        const unmatchedSubmissions = submissionsData.data || []
+        setSubmissions(unmatchedSubmissions)
+        console.log(`Loaded ${unmatchedSubmissions.length} truly unmatched participants for dashboard`)
+        console.log(`Total submissions: ${submissionsData.meta?.totalSubmissions}, Matched: ${submissionsData.meta?.matched}`)
       }
 
       // TODO: Load recent teams
@@ -61,34 +64,33 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
       setFormingTeams(true)
       setError(null)
 
-      const response = await fetch('/api/team-matching/automated-formation', {
+      const response = await fetch('/api/team-matching/form-teams', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          config: {
-            minSubmissions: 2, // Lower threshold for manual formation
-            enableNotifications: true
-          }
+          maxTeamSize: 4,
+          minTeamSize: 2
         })
       })
 
       const data = await response.json()
 
       if (data.success) {
-        alert(`Successfully formed ${data.data.teamsFormed} teams! ${data.data.participantsMatched} participants matched, ${data.data.participantsUnmatched} unmatched.`)
+        console.log('Team formation result:', data)
         
-        // Process notifications
-        await fetch('/api/team-matching/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'process' })
-        })
+        // Show success message
+        if (data.data) {
+          const { teamsFormed, participantsMatched, participantsUnmatched, totalParticipants, previouslyMatched } = data.data
+          alert(`✅ Team Formation Successful!\n\n• New teams formed: ${teamsFormed}\n• Participants newly matched: ${participantsMatched}\n• Participants still unmatched: ${participantsUnmatched}\n• Total processed: ${totalParticipants}\n• Previously matched: ${previouslyMatched || 0}\n\nDashboard will refresh to show updated data.`)
+        }
         
         // Reload dashboard data
         await loadDashboardData()
+        setError('')
       } else {
+        console.error('Team formation error:', data)
         setError(data.error || 'Failed to form teams')
       }
 
@@ -166,7 +168,7 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
             disabled={formingTeams || (submissions.length === 0)}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {formingTeams ? 'Forming Teams...' : `Form Teams (${submissions.length} pending)`}
+            {formingTeams ? 'Forming Teams...' : `Form Teams (${submissions.length} unmatched)`}
           </Button>
         </div>
       </div>
@@ -200,7 +202,8 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
               <CardTitle className="text-sm font-medium text-gray-600">Pending Match</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending_submissions}</div>
+              <div className="text-2xl font-bold text-yellow-600">{submissions.length}</div>
+              <div className="text-xs text-gray-500 mt-1">In Recent Submissions</div>
             </CardContent>
           </Card>
 
@@ -269,22 +272,30 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2">Name</th>
+                    <th className="text-left py-2">Email</th>
                     <th className="text-left py-2">College</th>
                     <th className="text-left py-2">Year</th>
                     <th className="text-left py-2">Team Size</th>
-                    <th className="text-left py-2">Availability</th>
+                    <th className="text-left py-2">Source</th>
                     <th className="text-left py-2">Status</th>
                     <th className="text-left py-2">Submitted</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {submissions.slice(0, 10).map((submission) => (
+                  {submissions.slice(0, 15).map((submission) => (
                     <tr key={submission.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 font-medium">{submission.full_name}</td>
+                      <td className="py-2 text-sm text-gray-600">{submission.email}</td>
                       <td className="py-2 text-gray-600">{submission.college_name}</td>
                       <td className="py-2">{submission.current_year}</td>
                       <td className="py-2">{submission.preferred_team_size}</td>
-                      <td className="py-2 text-sm">{submission.availability}</td>
+                      <td className="py-2">
+                        {submission.user_id ? (
+                          <Badge className="bg-blue-100 text-blue-800">Form</Badge>
+                        ) : (
+                          <Badge className="bg-orange-100 text-orange-800">CSV</Badge>
+                        )}
+                      </td>
                       <td className="py-2">{getStatusBadge(submission.status)}</td>
                       <td className="py-2 text-gray-500">
                         {new Date(submission.submitted_at).toLocaleDateString()}
@@ -294,11 +305,46 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
                 </tbody>
               </table>
               
-              {submissions.length > 10 && (
+              {submissions.length > 15 && (
                 <div className="mt-4 text-center">
                   <Button variant="outline" size="sm">
                     View All {submissions.length} Submissions
                   </Button>
+                </div>
+              )}
+              
+              {/* Show CSV participants separately if any */}
+              {submissions.filter(s => !s.user_id).length > 0 && (
+                <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <h4 className="font-semibold text-orange-800 mb-2">
+                    📄 CSV Imported Participants ({submissions.filter(s => !s.user_id).length})
+                  </h4>
+                  <p className="text-sm text-orange-700 mb-3">
+                    These participants were imported from CSV files and don't have user accounts. 
+                    They can be matched into teams or contacted directly via email/WhatsApp.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {submissions.filter(s => !s.user_id).slice(0, 6).map((submission) => (
+                      <div key={submission.id} className="bg-white p-3 rounded border">
+                        <div className="font-medium text-gray-900">{submission.full_name}</div>
+                        <div className="text-sm text-gray-600">{submission.email}</div>
+                        <div className="text-sm text-gray-600">{submission.college_name}</div>
+                        <div className="mt-2 flex items-center gap-2">
+                          {getStatusBadge(submission.status)}
+                          <span className="text-xs text-gray-500">
+                            Team size: {submission.preferred_team_size}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {submissions.filter(s => !s.user_id).length > 6 && (
+                    <div className="mt-3 text-center">
+                      <Button variant="outline" size="sm">
+                        View All {submissions.filter(s => !s.user_id).length} CSV Participants
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

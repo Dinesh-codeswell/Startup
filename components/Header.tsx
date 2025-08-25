@@ -20,7 +20,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [logoError, setLogoError] = useState(false)
-  const [isCaseMatchOpen, setIsCaseMatchOpen] = useState(false)
+
   const auth = useContext(AuthContext) // Use useContext directly
   const { isAdmin, isLoading: adminLoading } = useAdmin() // Get admin status
 
@@ -33,28 +33,18 @@ const Header = () => {
     { name: "About", href: "/about" },
   ]
 
-  // Filter case match items based on admin status
-  const caseMatchItems = [
-    { 
-      name: "Find Team", 
-      href: "/team", 
-      description: "Join team matching to find your perfect teammates",
-      icon: Users 
-    },
-    { 
-      name: "My Team", 
-      href: "/team-dashboard", 
-      description: "View your team dashboard and chat with teammates",
-      icon: UserCheck 
-    },
-    // Only show admin link to authorized admins
-    ...(isAdmin ? [{ 
-      name: "Admin", 
-      href: "/admin/dashboard", 
-      description: "Manage teams and view analytics",
-      icon: Settings 
-    }] : []),
-  ]
+  // Handle Find a Team click with authentication flow
+  const handleFindTeamClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    if (!user) {
+      // Redirect to login with return URL
+      window.location.href = '/login?returnTo=' + encodeURIComponent('/team')
+    } else {
+      // User is signed in, go to team page (which will show questionnaire)
+      window.location.href = '/team'
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -152,49 +142,14 @@ const Header = () => {
               </Link>
             ))}
             
-            {/* Case Match Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="text-gray-700 hover:text-blue-600 transition-colors duration-300 font-medium relative group text-sm xl:text-base flex items-center space-x-1">
-                  <span>Case Match</span>
-                  <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 p-2">
-                <div className="grid gap-1">
-                  {caseMatchItems.map((item) => {
-                    const IconComponent = item.icon
-                    return (
-                      <DropdownMenuItem key={item.name} asChild className="p-0">
-                        <Link
-                          href={item.href}
-                          className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                        >
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                            <IconComponent className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 text-sm">
-                              {item.name}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1 leading-relaxed">
-                              {item.description}
-                            </div>
-                          </div>
-                        </Link>
-                      </DropdownMenuItem>
-                    )
-                  })}
-                </div>
-                <DropdownMenuSeparator className="my-2" />
-                <div className="px-3 py-2">
-                  <div className="text-xs text-gray-500">
-                    Team matching powered by AI algorithms
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Find a Team - Direct Link */}
+            <button
+              onClick={handleFindTeamClick}
+              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 font-medium relative group text-sm xl:text-base"
+            >
+              Find a Team
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+            </button>
           </nav>
 
           {/* Desktop Auth Section */}
@@ -219,6 +174,12 @@ const Header = () => {
                     <Link href="/profile" className="flex items-center">
                       <User className="h-4 w-4 mr-2" />
                       My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/team-dashboard" className="flex items-center">
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      My Team
                     </Link>
                   </DropdownMenuItem>
                   {/* Admin-only menu items */}
@@ -263,12 +224,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-300 flex-shrink-0 ml-2"
-            onClick={() => {
-              setIsMenuOpen(!isMenuOpen)
-              if (isMenuOpen) {
-                setIsCaseMatchOpen(false)
-              }
-            }}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle navigation menu"
           >
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -296,47 +252,16 @@ const Header = () => {
               </Link>
             ))}
             
-            {/* Case Match Section for Mobile */}
-            <div className="pt-2 border-t border-gray-100">
-              <button
-                onClick={() => setIsCaseMatchOpen(!isCaseMatchOpen)}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-gray-900 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg mb-2 hover:from-blue-100 hover:to-purple-100 transition-colors duration-200"
-              >
-                <span>Case Match</span>
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCaseMatchOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <div className={`overflow-hidden transition-all duration-300 ${isCaseMatchOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="space-y-1">
-                  {caseMatchItems.map((item) => {
-                    const IconComponent = item.icon
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className="flex items-center space-x-3 py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors duration-300"
-                        onClick={() => {
-                          setIsMenuOpen(false)
-                          setIsCaseMatchOpen(false)
-                        }}
-                      >
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                          <IconComponent className="h-4 w-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900 text-base">
-                            {item.name}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.description}
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
+            {/* Find a Team - Mobile */}
+            <button
+              onClick={(e) => {
+                handleFindTeamClick(e)
+                setIsMenuOpen(false)
+              }}
+              className="text-gray-700 hover:text-blue-600 transition-colors duration-300 font-medium py-3 px-3 rounded-lg hover:bg-gray-50 text-base w-full text-left"
+            >
+              Find a Team
+            </button>
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
               {user ? (
                 <>
@@ -349,6 +274,15 @@ const Header = () => {
                       My Profile
                       {/* Admin badge in mobile menu */}
                       {isAdmin && <AdminBadge variant="compact" className="ml-auto" />}
+                    </Button>
+                  </Link>
+                  <Link href="/team-dashboard" onClick={() => setIsMenuOpen(false)}>
+                    <Button
+                      variant="outline"
+                      className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent justify-start py-3 text-base"
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      My Team
                     </Button>
                   </Link>
                   {/* Admin-only mobile menu items */}

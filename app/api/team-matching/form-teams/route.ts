@@ -1,117 +1,224 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
-import { enhancedIterativeMatching } from '@/lib/enhanced-iterative-matching'
-import type { TeamFormationResponse, TeamMatchingSubmission } from '@/lib/types/team-matching'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-// Force dynamic rendering for admin routes
-export const runtime = 'nodejs'
+// Enhanced team formation algorithm
+function formTeamsFromSubmissions(submissions: any[], maxTeamSize: number = 4, minTeamSize: number = 2) {
+  const teams: any[] = []
+  const unmatched: any[] = []
+  const availableParticipants = [...submissions]
+
+  console.log(`Starting team formation with ${availableParticipants.length} participants`)
+  console.log(`Team size range: ${minTeamSize}-${maxTeamSize}`)
+
+  // Sort by preferred team size to prioritize smaller teams first
+  availableParticipants.sort((a, b) => a.preferred_team_size - b.preferred_team_size)
+
+  let teamCounter = 1
+
+  while (availableParticipants.length >= minTeamSize) {
+    const teamMembers: any[] = []
+    const targetSize = Math.min(maxTeamSize, availableParticipants.length)
+    
+    // Pick the first participant as team lead
+    const teamLead = availableParticipants.shift()
+    if (!teamLead) break
+    
+    teamMembers.push(teamLead)
+    console.log(`Creating Team ${teamCounter} with lead: ${teamLead.full_name}`)
+
+    // Try to find compatible team members
+    for (let i = 0; i < targetSize - 1 && availableParticipants.length > 0; i++) {
+      // Simple compatibility: same team preference or "Either UG or PG"
+      const compatibleIndex = availableParticipants.findIndex(participant => {
+        const leadPreference = teamLead.team_preference
+        const participantPreference = participant.team_preference
+        
+        return (
+          leadPreference === participantPreference ||
+          leadPreference === 'Either UG or PG' ||
+          participantPreference === 'Either UG or PG'
+        )
+      })
+
+      if (compatibleIndex !== -1) {
+        const member = availableParticipants.splice(compatibleIndex, 1)[0]
+        teamMembers.push(member)
+        console.log(`  Added member: ${member.full_name}`)
+      } else if (availableParticipants.length > 0) {
+        // If no compatible member found, just take the next available
+        const member = availableParticipants.shift()
+        teamMembers.push(member)
+        console.log(`  Added member (no compatibility): ${member.full_name}`)
+      }
+    }
+
+    // Only create team if it meets minimum size
+    if (teamMembers.length >= minTeamSize) {
+      const team = {
+        id: `auto-team-${teamCounter}`,
+        teamName: `Auto Team ${teamCounter}`,
+        teamSize: teamMembers.length,
+        compatibilityScore: 75, // Default score for auto-formed teams
+        members: teamMembers,
+        formationMethod: 'auto'
+      }
+      
+      teams.push(team)
+      console.log(`✅ Created ${team.teamName} with ${teamMembers.length} members`)
+      teamCounter++
+    } else {
+      // If team is too small, add members back to unmatched
+      unmatched.push(...teamMembers)
+      console.log(`❌ Team too small (${teamMembers.length}), added to unmatched`)
+    }
+  }
+
+  // Add remaining participants to unmatched
+  unmatched.push(...availableParticipants)
+  
+  console.log(`Team formation complete: ${teams.length} teams, ${unmatched.length} unmatched`)
+  
+  return { teams, unmatched }
+}
 
 export async function POST(request: NextRequest) {
-  // Admin protection removed - endpoint is now publicly accessible
   try {
-    const { batch_name = `Batch ${new Date().toISOString()}` } = await request.json()
+    const { maxTeamSize = 4, minTeamSize = 2 } = await request.json()
     
-    // Get all pending submissions
-    const pendingSubmissions = await TeamMatchingService.getPendingSubmissions()
-    
-    if (pendingSubmissions.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No pending submissions found for team formation'
-      } as TeamFormationResponse, { status: 400 })
+    console.log('🚀 Starting automatic team formation...')
+    console.log(`Parameters: maxTeamSize=${maxTeamSize}, minTeamSize=${minTeamSize}`)
+
+    // Get all submissions
+    const { data: allSubmissions, error: fetchError } = await supabaseAdmin
+      .from('team_matching_submissions')
+      .select('*')
+      .order('submitted_at', { ascending: true })
+
+    if (fetchError) {
+      console.error('Error fetching submissions:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch submissions', details: fetchError.message },
+        { status: 500 }
+      )
     }
 
-    console.log(`Starting team formation for ${pendingSubmissions.length} submissions`)
+    // Get all team members to see which submissions are already in teams
+    const { data: teamMembers, error: membersError } = await supabaseAdmin
+      .from('team_members')
+      .select('submission_id')
 
-    // Convert database submissions to the format expected by the matching algorithm
-    const participantsForMatching = pendingSubmissions.map(submission => ({
-      id: submission.id,
-      fullName: submission.full_name,
-      email: submission.email,
-      whatsappNumber: submission.whatsapp_number,
-      collegeName: submission.college_name,
-      currentYear: submission.current_year,
-      coreStrengths: submission.core_strengths,
-      preferredRoles: submission.preferred_roles,
-      availability: submission.availability,
-      experience: submission.experience,
-      casePreferences: submission.case_preferences,
-      preferredTeamSize: submission.preferred_team_size,
-      // Map additional fields for compatibility with Participant interface
-      teamPreference: submission.team_preference as 'Undergrads only' | 'Postgrads only' | 'Either UG or PG',
-      workingStyle: [], // Default empty array
-      idealTeamStructure: '', // Default empty string (not array)
-      lookingFor: '', // Default empty string
-      workStyle: '' // Default empty string (not array)
-    }))
+    if (membersError) {
+      console.error('Error fetching team members:', membersError)
+      return NextResponse.json(
+        { error: 'Failed to fetch team members', details: membersError.message },
+        { status: 500 }
+      )
+    }
 
-    // Run the matching algorithm
-    const matchingResult = enhancedIterativeMatching(participantsForMatching, {
-      maxIterations: 30
-    })
+    // Create a set of submission IDs that are already in teams
+    const existingMatchedIds = new Set(teamMembers?.map(member => member.submission_id) || [])
 
-    console.log(`Matching algorithm completed: ${matchingResult.teams.length} teams formed, ${matchingResult.unmatched.length} unmatched`)
+    // Filter out submissions that are already in teams - only process truly unmatched ones
+    const unmatchedSubmissions = allSubmissions?.filter(submission => 
+      !existingMatchedIds.has(submission.id)
+    ) || []
+
+    if (unmatchedSubmissions.length === 0) {
+      return NextResponse.json(
+        { error: 'No unmatched submissions found for team formation. All participants are already in teams.' },
+        { status: 400 }
+      )
+    }
+
+    console.log(`Total submissions: ${allSubmissions?.length || 0}`)
+    console.log(`Already matched: ${existingMatchedIds.size}`)
+    console.log(`Available for matching: ${unmatchedSubmissions.length}`)
+
+    // Form teams using the algorithm - only process unmatched submissions
+    const { teams, unmatched } = formTeamsFromSubmissions(unmatchedSubmissions, maxTeamSize, minTeamSize)
+
+    if (teams.length === 0) {
+      return NextResponse.json(
+        { error: 'No teams could be formed with the given parameters' },
+        { status: 400 }
+      )
+    }
 
     // Save teams to database
-    const createdTeams = []
+    console.log(`💾 Saving ${teams.length} teams to database...`)
     
-    for (let i = 0; i < matchingResult.teams.length; i++) {
-      const algorithmTeam = matchingResult.teams[i]
-      
+    const savedTeams: any[] = []
+    const errors: string[] = []
+
+    for (const team of teams) {
       try {
+        // Get submission IDs for team members
+        const memberSubmissionIds = team.members.map((member: any) => member.id)
+        
+        // Create team in database
         const teamData = {
-          team_name: `Team ${i + 1}`,
-          team_size: algorithmTeam.teamSize,
-          compatibility_score: algorithmTeam.compatibilityScore,
-          member_submission_ids: algorithmTeam.members.map(member => member.id)
+          team_name: team.teamName,
+          team_size: team.teamSize,
+          compatibility_score: team.compatibilityScore,
+          member_submission_ids: memberSubmissionIds,
+          status: 'active'
         }
 
-        const createdTeam = await TeamMatchingService.createTeam(teamData)
-        createdTeams.push(createdTeam)
+        console.log(`Creating team: ${team.teamName} with ${memberSubmissionIds.length} members`)
         
-        console.log(`Created team ${i + 1} with ${algorithmTeam.members.length} members`)
+        const savedTeam = await TeamMatchingService.createTeam(teamData)
+        savedTeams.push(savedTeam)
         
+        console.log(`✅ Saved team: ${savedTeam.team_name}`)
       } catch (error) {
-        console.error(`Error creating team ${i + 1}:`, error)
-        // Continue with other teams even if one fails
+        console.error(`Error saving team ${team.teamName}:`, error)
+        errors.push(`Error saving team ${team.teamName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
 
-    // Update unmatched submissions status (optional - keep them as pending for next batch)
-    const unmatchedIds = matchingResult.unmatched.map(participant => participant.id)
-    if (unmatchedIds.length > 0) {
-      console.log(`${unmatchedIds.length} participants remain unmatched`)
-      // Optionally update their status or leave as pending for next batch
-    }
+    // Get IDs of participants who were just matched into new teams
+    const newlyMatchedIds = teams.flatMap(team => team.members.map((member: any) => member.id))
+    
+    // Note: We don't need to update submission statuses anymore
+    // The dashboard now uses team membership to determine matched/unmatched status
+    console.log(`✅ Teams created successfully. Dashboard will automatically show updated data based on team membership.`)
+    console.log(`Newly matched participants: ${newlyMatchedIds.length}`)
 
-    // TODO: In future iterations, add:
-    // 1. Create notifications for all team members
-    // 2. Create WhatsApp/Discord groups
-    // 3. Send email notifications with team details
-    // 4. Create team matching batch record
-
-    const response: TeamFormationResponse = {
+    // Send success response
+    const response = {
       success: true,
-      message: `Successfully formed ${createdTeams.length} teams from ${pendingSubmissions.length} submissions`,
+      message: `Successfully formed ${savedTeams.length} teams from ${unmatchedSubmissions.length} unmatched participants`,
       data: {
-        batch_id: `batch_${Date.now()}`, // Temporary ID
-        teams_formed: createdTeams.length,
-        total_matched: createdTeams.reduce((sum, team) => sum + team.team_size, 0),
-        unmatched_count: matchingResult.unmatched.length,
-        teams: createdTeams
-      }
+        teamsFormed: savedTeams.length,
+        participantsMatched: newlyMatchedIds.length,
+        participantsUnmatched: unmatched.length,
+        totalParticipants: unmatchedSubmissions.length,
+        previouslyMatched: existingMatchedIds.size,
+        errors: errors.length > 0 ? errors : undefined
+      },
+      teams: savedTeams.map(team => ({
+        id: team.id,
+        name: team.team_name,
+        size: team.team_size,
+        score: team.compatibility_score
+      }))
     }
+
+    console.log('🎉 Team formation completed successfully!')
+    console.log(`Results: ${savedTeams.length} new teams, ${newlyMatchedIds.length} newly matched, ${unmatched.length} still unmatched`)
+    console.log(`Previously matched: ${existingMatchedIds.size}, Total processed: ${unmatchedSubmissions.length}`)
 
     return NextResponse.json(response)
-    
+
   } catch (error) {
     console.error('Error in team formation:', error)
-    
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    
-    return NextResponse.json({
-      success: false,
-      error: `Failed to form teams: ${errorMessage}`
-    } as TeamFormationResponse, { status: 500 })
+    return NextResponse.json(
+      { 
+        error: 'Failed to form teams',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
   }
 }

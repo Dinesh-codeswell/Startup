@@ -99,6 +99,7 @@ export interface TeamMatchingStats {
 // Form submission types (for API)
 export interface TeamMatchingFormData {
   id: string
+  userId?: string // Optional user ID for authenticated submissions
   fullName: string
   email: string
   whatsappNumber: string

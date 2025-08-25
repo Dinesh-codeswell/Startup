@@ -328,16 +328,25 @@ export class TeamMatchingService {
       console.log('Database function not available, calculating stats manually...')
     }
 
-    // Fallback: Calculate stats manually
+    // Fallback: Calculate stats manually based on team membership (not status field)
     try {
-      // Get submission counts by status
+      // Get all submissions
       const { data: submissions, error: submissionsError } = await supabaseAdmin
         .from('team_matching_submissions')
-        .select('status')
+        .select('id')
 
       if (submissionsError) {
         console.error('Error fetching submissions for stats:', submissionsError)
         return this.getDefaultStats()
+      }
+
+      // Get all team members to determine which submissions are matched
+      const { data: teamMembers, error: membersError } = await supabaseAdmin
+        .from('team_members')
+        .select('submission_id')
+
+      if (membersError) {
+        console.error('Error fetching team members for stats:', membersError)
       }
 
       // Get team counts
@@ -349,10 +358,12 @@ export class TeamMatchingService {
         console.error('Error fetching teams for stats:', teamsError)
       }
 
-      // Calculate statistics
+      // Calculate statistics based on actual team membership
       const totalSubmissions = submissions?.length || 0
-      const pendingSubmissions = submissions?.filter(s => s.status === 'pending_match').length || 0
-      const matchedSubmissions = submissions?.filter(s => s.status === 'team_formed').length || 0
+      const matchedSubmissionIds = new Set(teamMembers?.map(member => member.submission_id) || [])
+      const matchedSubmissions = matchedSubmissionIds.size
+      const pendingSubmissions = totalSubmissions - matchedSubmissions
+      
       const totalTeams = teams?.length || 0
       const activeTeams = teams?.filter(t => t.status === 'active').length || 0
       
@@ -363,6 +374,9 @@ export class TeamMatchingService {
       const avgCompatibilityScore = totalTeams > 0
         ? (teams?.reduce((sum, t) => sum + (t.compatibility_score || 0), 0) || 0) / totalTeams
         : 0
+
+      console.log(`📊 Stats calculated: ${totalSubmissions} total, ${matchedSubmissions} matched, ${pendingSubmissions} pending, ${totalTeams} teams`)
+      console.log(`📊 Matched submission IDs: ${Array.from(matchedSubmissionIds).slice(0, 3).join(', ')}...`)
 
       return {
         total_submissions: totalSubmissions,

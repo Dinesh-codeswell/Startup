@@ -55,11 +55,13 @@ function AdminCaseMatchPage() {
         try {
             console.log('Saving teams to database...');
 
-            // Get all participants (matched and unmatched)
-            const allParticipants = [
-                ...matchingResult.teams.flatMap(team => team.members),
-                ...matchingResult.unmatched
-            ];
+            // Get matched participants (from teams)
+            const matchedParticipants = matchingResult.teams.flatMap(team => team.members);
+            
+            // Get unmatched participants
+            const unmatchedParticipants = matchingResult.unmatched || [];
+
+            console.log(`Saving ${matchingResult.teams.length} teams, ${matchedParticipants.length} matched participants, ${unmatchedParticipants.length} unmatched participants`);
 
             const response = await fetch('/api/case-match/save-teams', {
                 method: 'POST',
@@ -68,22 +70,33 @@ function AdminCaseMatchPage() {
                 },
                 body: JSON.stringify({
                     teams: matchingResult.teams,
-                    participants: allParticipants
+                    participants: matchedParticipants,
+                    unmatched: unmatchedParticipants
                 }),
             });
 
             const result = await response.json();
 
-            if (response.ok) {
+            if (response.ok && result.success) {
                 console.log('✅ Teams saved successfully:', result);
                 setSavedToDB(true);
+                
+                // Show detailed success message
+                const { data } = result;
+                alert(`Successfully saved to database:\n• ${data.savedTeams} teams\n• ${data.matchedParticipants} matched participants\n• ${data.unmatchedParticipants} unmatched participants\n• ${data.notificationsSent} notifications sent`);
             } else {
                 console.error('❌ Failed to save teams:', result.error);
-                setError(`Failed to save teams to database: ${result.error}`);
+                setError(`Failed to save teams to database: ${result.error || 'Unknown error'}`);
+                
+                // Show errors if any
+                if (result.data?.errors && result.data.errors.length > 0) {
+                    console.error('Detailed errors:', result.data.errors);
+                    setError(`Database errors: ${result.data.errors.join('; ')}`);
+                }
             }
         } catch (error) {
             console.error('❌ Error saving teams to database:', error);
-            setError('Error saving teams to database');
+            setError(`Error saving teams to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setSavingToDB(false);
         }
@@ -170,6 +183,45 @@ function AdminCaseMatchPage() {
                 rows.push(row.join(','));
             });
         }
+
+        return rows.join('\n');
+    };
+
+    const generateUnmatchedCSV = (unmatched: any[]): string => {
+        const headers = [
+            'Full Name',
+            'Email',
+            'WhatsApp Number',
+            'College Name',
+            'Current Year',
+            'Core Strengths',
+            'Preferred Roles',
+            'Availability',
+            'Experience',
+            'Case Preferences',
+            'Preferred Team Size',
+            'Team Preference'
+        ];
+
+        const rows = [headers.join(',')];
+
+        unmatched.forEach((participant) => {
+            const row = [
+                `"${participant.fullName}"`,
+                participant.email,
+                participant.whatsappNumber,
+                `"${participant.collegeName}"`,
+                participant.currentYear,
+                `"${participant.coreStrengths.join(';')}"`,
+                `"${participant.preferredRoles.join(';')}"`,
+                participant.availability,
+                participant.experience,
+                `"${participant.casePreferences.join(';')}"`,
+                participant.preferredTeamSize.toString(),
+                participant.teamPreference
+            ];
+            rows.push(row.join(','));
+        });
 
         return rows.join('\n');
     };
@@ -341,122 +393,160 @@ function AdminCaseMatchPage() {
                             ))}
                         </div>
 
-                        {/* Enhanced Unmatched Participants Analysis */}
-                        <div className="mt-12">
-                            {(() => {
-                                try {
-                                    // Calculate all participants from teams and unmatched
-                                    const allParticipants = [
-                                        ...results.teams.flatMap(team => team.members),
-                                        ...results.unmatched
-                                    ];
+                        {/* Unmatched Participants Section */}
+                        {results.unmatched && results.unmatched.length > 0 && (
+                            <div className="mt-12">
+                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                    <div className="bg-orange-600 px-6 py-4">
+                                        <h3 className="text-xl font-bold text-white flex items-center">
+                                            <span className="mr-3">⚠️ Unmatched Participants</span>
+                                            <span className="px-3 py-1 bg-orange-500 rounded-full text-sm font-semibold">
+                                                {results.unmatched.length} unmatched
+                                            </span>
+                                        </h3>
+                                        <p className="text-orange-100 mt-1">
+                                            These participants couldn't be matched into teams and will be saved for manual review
+                                        </p>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {results.unmatched.map((participant) => (
+                                                <div key={participant.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                                            {participant.fullName.charAt(0)}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
+                                                                Unmatched
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <h4 className="font-semibold text-gray-900 mb-1">{participant.fullName}</h4>
+                                                    <p className="text-sm text-gray-600 mb-1">{participant.email}</p>
+                                                    <p className="text-sm text-gray-600 mb-1">{participant.collegeName}</p>
+                                                    <p className="text-sm text-gray-600 mb-3">{participant.currentYear}</p>
 
-                                    // Analyze unmatched participants
-                                    // const unmatchedReport = analyzeUnmatchedParticipants(
-                                    //     results.unmatched,
-                                    //     allParticipants,
-                                    //     results.teams
-                                    // );
-                                    const unmatchedReport = { analyses: [] };
+                                                    {/* Key Preferences */}
+                                                    <div className="space-y-2 text-xs">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium text-gray-700">Team Size:</span>
+                                                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                                                {participant.preferredTeamSize} members
+                                                            </span>
+                                                        </div>
 
-                                    return (
-                                        <UnmatchedParticipants
-                                            analyses={unmatchedReport.analyses}
-                                            totalParticipants={allParticipants.length}
-                                        />
-                                    );
-                                } catch (error) {
-                                    console.error('Error in unmatched analysis:', error);
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium text-gray-700">Composition:</span>
+                                                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                                                {participant.teamPreference}
+                                                            </span>
+                                                        </div>
 
-                                    // Fallback to simple unmatched display
-                                    return (
-                                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                                            <div className="bg-red-600 px-6 py-4">
-                                                <h3 className="text-xl font-bold text-white flex items-center">
-                                                    <span className="mr-3">⚠️ Unmatched Participants</span>
-                                                    <span className="px-3 py-1 bg-red-500 rounded-full text-sm font-semibold">
-                                                        {results.unmatched.length} unmatched
-                                                    </span>
-                                                </h3>
-                                            </div>
-                                            <div className="p-6">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    {results.unmatched.map((participant) => (
-                                                        <div key={participant.id} className="bg-gray-50 rounded-lg p-4">
-                                                            <h4 className="font-semibold text-gray-900 mb-2">{participant.fullName}</h4>
-                                                            <p className="text-sm text-gray-600 mb-1">{participant.collegeName}</p>
-                                                            <p className="text-sm text-gray-600 mb-2">{participant.currentYear}</p>
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">Availability:</span>
+                                                            <p className="text-gray-600 mt-1 text-xs">{participant.availability}</p>
+                                                        </div>
 
-                                                            {/* Enhanced Team Preferences Display */}
-                                                            <div className="mt-3 space-y-2 text-xs">
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Team Size Preference:</span>
-                                                                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                                                                        {participant.preferredTeamSize} members
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">Experience:</span>
+                                                            <p className="text-gray-600 mt-1 text-xs">{participant.experience}</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">Case Preferences:</span>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {participant.casePreferences.slice(0, 2).map((pref, idx) => (
+                                                                    <span key={idx} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                                                        {pref}
                                                                     </span>
-                                                                </div>
-
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Team Composition:</span>
-                                                                    <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
-                                                                        {participant.teamPreference}
+                                                                ))}
+                                                                {participant.casePreferences.length > 2 && (
+                                                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                                                        +{participant.casePreferences.length - 2}
                                                                     </span>
-                                                                </div>
-
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Availability:</span>
-                                                                    <p className="text-gray-600 mt-1">{participant.availability}</p>
-                                                                </div>
-
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Experience:</span>
-                                                                    <p className="text-gray-600 mt-1">{participant.experience}</p>
-                                                                </div>
-
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Case Preferences:</span>
-                                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                                        {participant.casePreferences.map((pref, idx) => (
-                                                                            <span key={idx} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                                                                                {pref}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div>
-                                                                    <span className="font-medium text-gray-700">Core Strengths:</span>
-                                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                                        {participant.coreStrengths.map((strength, idx) => (
-                                                                            <span key={idx} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-                                                                                {strength}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Basic Unmatching Reason */}
-                                                                <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
-                                                                    <span className="font-medium text-red-700 text-xs">Likely Issue:</span>
-                                                                    <p className="text-red-600 text-xs mt-1">
-                                                                        {participant.preferredTeamSize > 4 || participant.preferredTeamSize < 2
-                                                                            ? 'Invalid team size preference (must be 2-4)'
-                                                                            : participant.availability === 'Not available now, but interested later'
-                                                                                ? 'Not currently available for team participation'
-                                                                                : `Insufficient participants with matching preferences (team size: ${participant.preferredTeamSize}, composition: ${participant.teamPreference})`
-                                                                        }
-                                                                    </p>
-                                                                </div>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    ))}
+
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">Core Strengths:</span>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {participant.coreStrengths.slice(0, 2).map((strength, idx) => (
+                                                                    <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                                                        {strength}
+                                                                    </span>
+                                                                ))}
+                                                                {participant.coreStrengths.length > 2 && (
+                                                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                                                        +{participant.coreStrengths.length - 2}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Contact Info */}
+                                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-medium text-gray-700 text-xs">Contact:</span>
+                                                                <span className="text-gray-600 text-xs">{participant.whatsappNumber}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Likely Reason */}
+                                                        <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded">
+                                                            <span className="font-medium text-orange-700 text-xs">Likely Issue:</span>
+                                                            <p className="text-orange-600 text-xs mt-1">
+                                                                {participant.preferredTeamSize > 4 || participant.preferredTeamSize < 2
+                                                                    ? 'Invalid team size preference (must be 2-4)'
+                                                                    : participant.availability === 'Not available now, but interested later'
+                                                                        ? 'Not currently available for team participation'
+                                                                        : `Insufficient participants with matching preferences (team size: ${participant.preferredTeamSize}, composition: ${participant.teamPreference})`
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    );
-                                }
-                            })()}
-                        </div>
+                                        
+                                        {/* Action Buttons */}
+                                        <div className="mt-6 flex justify-center space-x-4">
+                                            <button
+                                                onClick={() => {
+                                                    const csvContent = generateUnmatchedCSV(results.unmatched);
+                                                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = 'unmatched-participants.csv';
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    window.URL.revokeObjectURL(url);
+                                                }}
+                                                className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors duration-200 flex items-center"
+                                            >
+                                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Download Unmatched CSV
+                                            </button>
+                                            <button
+                                                onClick={() => window.open('/admin/dashboard', '_blank')}
+                                                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center"
+                                            >
+                                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H9a2 2 0 01-2-2z" />
+                                                </svg>
+                                                View in Dashboard
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

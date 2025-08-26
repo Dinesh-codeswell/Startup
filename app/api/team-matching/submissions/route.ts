@@ -3,7 +3,7 @@ import { TeamMatchingService } from '@/lib/services/team-matching-db'
 import type { TeamMatchingQuery } from '@/lib/types/team-matching'
 
 // Force dynamic rendering for admin routes
-export const runtime = 'nodejs'
+// Runtime configuration removed to fix Edge Runtime build errors
 
 export async function GET(request: NextRequest) {
   // Admin protection removed - endpoint is now publicly accessible

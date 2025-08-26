@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Force dynamic rendering for admin routes
-export const runtime = 'nodejs';
+// Runtime configuration removed to fix Edge Runtime build errors
 
 // Mock RL metrics data for demonstration
 const generateMockRLMetrics = () => {

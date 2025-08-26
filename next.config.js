@@ -1,13 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Enable optimized package imports (compatible with stable Next.js)
-    optimizePackageImports: ['lucide-react'],
-    // Enable server components external packages
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-    // Force Node.js runtime instead of Edge Runtime
-    runtime: undefined, // Disable experimental runtime features
-  },
   
   // Disable source maps in production for faster builds
   productionBrowserSourceMaps: false,
@@ -78,8 +70,16 @@ const nextConfig = {
   compress: true,
   // Enable SWC minification
   swcMinify: true,
-  // Optimize output
+  // Optimize output and force Node.js runtime
   output: 'standalone',
+  // Disable Edge Runtime completely
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+    serverComponentsExternalPackages: ['@supabase/supabase-js', '@babel/runtime'],
+    // Disable Edge Runtime features
+    esmExternals: false,
+  },
+
   // Enable static optimization
   trailingSlash: false,
   // Optimize page loading
@@ -113,6 +113,7 @@ const nextConfig = {
         http: false,
         https: false,
         assert: false,
+        '@babel/runtime/regenerator': false,
       };
     }
 
@@ -134,16 +135,43 @@ const nextConfig = {
     }
     
     // Handle @splinetool/runtime specifically to avoid Edge Runtime issues
-    config.module.rules.push({
-      test: /node_modules\/@splinetool\/runtime/,
-      use: {
-        loader: 'babel-loader',
-        options: {
-          presets: ['next/babel'],
-          plugins: [],
+    // Exclude from server-side processing to prevent Dynamic Code Evaluation errors
+    if (!isServer) {
+      config.module.rules.push({
+        test: /node_modules\/@splinetool\/runtime/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['next/babel'],
+            plugins: [],
+          },
         },
-      },
-    });
+      });
+    } else {
+       // Exclude problematic packages from server-side bundle
+       config.externals = config.externals || [];
+       if (Array.isArray(config.externals)) {
+         config.externals.push(
+           '@splinetool/runtime', 
+           '@babel/runtime/regenerator',
+           '@babel/runtime',
+           'regenerator-runtime'
+         );
+       } else if (typeof config.externals === 'function') {
+         const originalExternals = config.externals;
+         config.externals = (context, request, callback) => {
+           if ([
+             '@splinetool/runtime',
+             '@babel/runtime/regenerator', 
+             '@babel/runtime',
+             'regenerator-runtime'
+           ].includes(request)) {
+             return callback(null, 'commonjs ' + request);
+           }
+           return originalExternals(context, request, callback);
+         };
+       }
+     }
     
     // Fix module loading issues and webpack runtime errors
     config.module.rules.push({
@@ -151,6 +179,12 @@ const nextConfig = {
       resolve: {
         fullySpecified: false,
       },
+    });
+
+    // Completely ignore babel runtime regenerator to prevent Edge Runtime issues
+    config.module.rules.push({
+      test: /node_modules\/@babel\/runtime\/regenerator/,
+      use: 'null-loader',
     });
 
     // Fix webpack runtime module loading error

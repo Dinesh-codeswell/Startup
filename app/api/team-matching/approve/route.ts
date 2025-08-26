@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // Force dynamic rendering for admin routes
-export const runtime = 'nodejs'
+// Runtime configuration removed to fix Edge Runtime build errors
 
 interface ApproveTeamRequest {
   team_id: string

@@ -11,8 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary"
 import { Suspense } from "react"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 
-// Force Node.js runtime instead of Edge Runtime
-export const runtime = 'nodejs'
+// Runtime configuration removed to fix Edge Runtime build errors
 
 const inter = Inter({ 
   subsets: ["latin"],

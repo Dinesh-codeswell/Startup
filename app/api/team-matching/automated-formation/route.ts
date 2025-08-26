@@ -3,7 +3,7 @@ import { AutomatedTeamFormationService } from '@/lib/services/automated-team-for
 import type { AutomatedFormationConfig } from '@/lib/services/automated-team-formation'
 
 // Force dynamic rendering for admin routes
-export const runtime = 'nodejs'
+// Runtime configuration removed to fix Edge Runtime build errors
 
 export async function POST(request: NextRequest) {
   // Admin protection removed - endpoint is now publicly accessible

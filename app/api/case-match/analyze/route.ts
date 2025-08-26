@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseCSVToParticipants } from '@/lib/case-match';
 
 // Force dynamic rendering for admin routes
-export const runtime = 'nodejs';
+// Runtime configuration removed to fix Edge Runtime build errors
 
 export async function POST(request: NextRequest) {
   // Admin protection removed - endpoint is now publicly accessible

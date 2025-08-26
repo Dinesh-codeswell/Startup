@@ -75,10 +75,18 @@ const nextConfig = {
   // Disable Edge Runtime completely
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    serverComponentsExternalPackages: ['@supabase/supabase-js', '@babel/runtime'],
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
     // Disable Edge Runtime features
     esmExternals: false,
+    forceSwcTransforms: true,
+    swcMinify: true,
   },
+  
+  // Force SWC compiler instead of Babel
+  swcMinify: true,
+  
+  // Force server target to avoid Edge Runtime
+  target: 'server',
 
   // Enable static optimization
   trailingSlash: false,
@@ -181,11 +189,11 @@ const nextConfig = {
       },
     });
 
-    // Completely ignore babel runtime regenerator to prevent Edge Runtime issues
-    config.module.rules.push({
-      test: /node_modules\/@babel\/runtime\/regenerator/,
-      use: 'null-loader',
-    });
+    // Force SWC compilation
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          'regenerator-runtime': false,
+        };
 
     // Fix webpack runtime module loading error
     config.module.rules.push({

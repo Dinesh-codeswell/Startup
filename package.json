@@ -7,7 +7,7 @@
     "pnpm": ">=8.0.0"
   },
   "scripts": {
-    "build": "next build",
+    "build": "cross-env NEXT_RUNTIME=nodejs next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
@@ -109,6 +109,7 @@
     "@types/uuid": "^9.0.8",
     "@vitest/ui": "^3.2.4",
     "babel-loader": "^10.0.0",
+    "cross-env": "^10.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2",

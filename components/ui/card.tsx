@@ -3,11 +3,17 @@ import React from 'react'
 interface CardProps {
   children: React.ReactNode
   className?: string
+  onClick?: () => void
+  style?: React.CSSProperties
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', onClick, style }: CardProps) {
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+    <div 
+      className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}
+      onClick={onClick}
+      style={style}
+    >
       {children}
     </div>
   )

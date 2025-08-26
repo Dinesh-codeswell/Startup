@@ -21,7 +21,12 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run backend:dev\"",
     "dev:standalone": "npm run dev",
     "build:full": "npm run build && npm run backend:build",
-    "setup:case-match": "node setup-case-match.js"
+    "setup:case-match": "node setup-case-match.js",
+    "perf:test": "node scripts/performance-test.js",
+    "perf:analyze": "npm run build && npm run start & sleep 5 && npm run perf:test && pkill -f 'next start'",
+    "fix:all": "node scripts/fix-and-test.js",
+    "build:fix": "node scripts/build-fix.js",
+    "test:website": "node scripts/test-website.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -92,6 +97,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.23",
     "@types/multer": "^1.4.13",
@@ -101,6 +108,7 @@
     "@types/react-dom": "^18.3.7",
     "@types/uuid": "^9.0.8",
     "@vitest/ui": "^3.2.4",
+    "babel-loader": "^10.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2",

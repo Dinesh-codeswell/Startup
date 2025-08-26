@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
@@ -14,12 +14,20 @@ export async function GET(request: NextRequest) {
     error,
     errorDescription,
     redirectTo,
-    fullUrl: request.url
+    fullUrl: request.url,
+    searchParams: Object.fromEntries(requestUrl.searchParams.entries())
   })
 
   // Handle OAuth errors
   if (error) {
     console.error('OAuth error in callback:', { error, errorDescription })
+    
+    // For certain errors, redirect to homepage instead of login to avoid loops
+    if (error === 'access_denied' || error === 'cancelled') {
+      console.log('User cancelled OAuth, redirecting to homepage')
+      return NextResponse.redirect(new URL('/', requestUrl.origin))
+    }
+    
     const loginUrl = new URL('/login', requestUrl.origin)
     loginUrl.searchParams.set('error', `oauth_error: ${error}`)
     if (errorDescription) {
@@ -28,9 +36,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
   
+  // If no code but no error, this might be a successful OAuth with tokens in hash
+  // Check if this is a successful OAuth callback without code (implicit flow)
   if (!code) {
-    console.error('No authorization code received in callback')
-    return NextResponse.redirect(new URL('/login?error=no_authorization_code', requestUrl.origin))
+    console.log('No authorization code - checking if this is implicit flow or successful auth')
+    
+    // Check if there are OAuth success indicators in the URL
+    const accessToken = requestUrl.searchParams.get('access_token')
+    const refreshToken = requestUrl.searchParams.get('refresh_token')
+    
+    if (accessToken || refreshToken) {
+      console.log('OAuth tokens found in URL parameters, redirecting to handle client-side')
+      // Redirect to a client-side handler that can process the tokens
+      const clientHandlerUrl = new URL('/', requestUrl.origin)
+      clientHandlerUrl.searchParams.set('auth_callback', 'true')
+      if (redirectTo) {
+        clientHandlerUrl.searchParams.set('redirect_to', redirectTo)
+      }
+      return NextResponse.redirect(clientHandlerUrl)
+    }
+    
+    console.log('No authorization code and no tokens, redirecting to homepage')
+    return NextResponse.redirect(new URL('/', requestUrl.origin))
   }
 
   try {
@@ -43,11 +70,21 @@ export async function GET(request: NextRequest) {
           get(name: string) {
             return cookieStore.get(name)?.value
           },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
+          set(name: string, value: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value, ...options })
+            } catch (error) {
+              // Handle cookie setting errors gracefully
+              console.warn('Failed to set cookie:', name, error)
+            }
           },
-          remove(name: string, options: any) {
-            cookieStore.set({ name, value: '', ...options })
+          remove(name: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value: '', ...options })
+            } catch (error) {
+              // Handle cookie removal errors gracefully
+              console.warn('Failed to remove cookie:', name, error)
+            }
           },
         },
       }
@@ -120,10 +157,10 @@ export async function GET(request: NextRequest) {
       // Continue with auth flow even if profile operations fail
     }
     
-    // Determine redirect URL
+    // Determine redirect URL - default to homepage for better UX
     let finalRedirectUrl = '/'
     
-    if (redirectTo) {
+    if (redirectTo && redirectTo !== '/login') {
       // Validate redirect URL to prevent open redirects
       try {
         const redirectUrl = new URL(redirectTo, requestUrl.origin)
@@ -138,9 +175,6 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Redirecting authenticated user to:', finalRedirectUrl)
-    
-    // Create the redirect response
-    const response = NextResponse.redirect(new URL(finalRedirectUrl, requestUrl.origin))
     
     // Add success indicator to URL for client-side handling
     const successUrl = new URL(finalRedirectUrl, requestUrl.origin)

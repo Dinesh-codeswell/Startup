@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import { useAuth } from "./auth-context"
 import { isAuthorizedAdmin } from "@/lib/admin-utils"
 
@@ -104,13 +104,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
-  const contextValue: AdminContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue: AdminContextType = useMemo(() => ({
     isAdmin,
     isLoading: isLoading || authLoading,
     checkAdminStatus,
     refreshAdminStatus: checkAdminStatus,
     error
-  }
+  }), [isAdmin, isLoading, authLoading, checkAdminStatus, error])
 
   return (
     <AdminContext.Provider value={contextValue}>

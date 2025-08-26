@@ -28,32 +28,28 @@ const Opportunities = () => {
   const opportunities = [
     {
       title: "Internships",
-      //description: "Curated roles that help you apply your skills in the real world.",
-      //action: "Join Our Community",
+      description: "Curated roles that help you apply your skills in the real world.",
       link: "https://forms.gle/xJi1bQFXkXn3ruEy8",
       isExternal: true,
       backgroundImage: "/images/mock-case-study-12.png",
     },
     {
       title: "Resume Review",
-      //description: "Get personalized feedback and design optimization.",
-      //action: "Drop at +91 9907729873",
+      description: "Get personalized feedback and design optimization.",
       link: "https://unstop.com/mentor/book-mentor/253300/225398?refId=72suCoQ",
       isExternal: true,
       backgroundImage: "/images/mock-case-study-10.png",
     },
     {
       title: "Mock Interview",
-      // description: "Simulate real interviews with AI and expert insights.",
-      // action: "Apply Now",
+      description: "Simulate real interviews with AI and expert insights.",
       link: "https://wize.co.in/interviews",
       isExternal: true,
       backgroundImage: "/images/mock-case-study-11.png",
     },
     {
       title: "Jobs",
-      //description: "No clutter. No noise. Just real job openings from our trusted network.",
-      //action: "Apply Now",
+      description: "No clutter. No noise. Just real job openings from our trusted network.",
       link: "https://forms.gle/xJi1bQFXkXn3ruEy8",
       isExternal: true,
       backgroundImage: "/images/jobs-card-bg-new.png",
@@ -111,13 +107,15 @@ const Opportunities = () => {
             className={`h-96 border-white/20 transition-all duration-500 relative rounded-2xl group overflow-hidden hover-lift animate-shimmer cursor-pointer ${
               isVisible ? "animate-scale-in" : "opacity-0"
             }`}
-            style={{
-              backgroundImage: `url(${opportunities[0].backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
             onClick={() => handleAction(opportunities[0].link, opportunities[0].isExternal)}
           >
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url(${opportunities[0].backgroundImage})`,
+              }}
+            />
             <CardContent className="p-8 h-full flex flex-col justify-between relative">
               {/* Reduced overlay opacity for better image visibility */}
               <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 rounded-2xl" />
@@ -156,12 +154,16 @@ const Opportunities = () => {
               }`}
               style={{
                 animationDelay: "0.1s",
-                backgroundImage: `url(${opportunities[1].backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
               }}
               onClick={() => handleAction(opportunities[1].link, opportunities[1].isExternal)}
             >
+              {/* Background Image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: `url(${opportunities[1].backgroundImage})`,
+                }}
+              />
               <CardContent className="p-6 h-full flex flex-col justify-between relative">
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 rounded-2xl" />
                 <div className="absolute inset-0 bg-gradient-to-br from-[#BAD6EB]/10 to-[#4ebbf8]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -193,12 +195,16 @@ const Opportunities = () => {
               }`}
               style={{
                 animationDelay: "0.2s",
-                backgroundImage: `url(${opportunities[2].backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
               }}
               onClick={() => handleAction(opportunities[2].link, opportunities[2].isExternal)}
             >
+              {/* Background Image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: `url(${opportunities[2].backgroundImage})`,
+                }}
+              />
               <CardContent className="p-6 h-full flex flex-col justify-between relative">
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 rounded-2xl" />
                 <div className="absolute inset-0 bg-gradient-to-br from-[#4ebbf8]/10 to-[#BAD6EB]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -232,12 +238,16 @@ const Opportunities = () => {
             }`}
             style={{
               animationDelay: "0.3s",
-              backgroundImage: `url(${opportunities[3].backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
             }}
             onClick={() => handleAction(opportunities[3].link, opportunities[3].isExternal)}
           >
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url(${opportunities[3].backgroundImage})`,
+              }}
+            />
             <CardContent className="p-8 h-full flex flex-col justify-between relative">
               <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 rounded-2xl" />
               <div className="absolute inset-0 bg-gradient-to-br from-[#BAD6EB]/10 to-[#4ebbf8]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

@@ -1,0 +1,21 @@
+{
+  "name": "Beyond Career",
+  "short_name": "Beyond Career",
+  "description": "Personalized career guidance for every student",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#081F5C",
+  "icons": [
+    {
+      "src": "/images/beyond-career-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/beyond-career-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

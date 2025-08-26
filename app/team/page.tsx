@@ -8,7 +8,7 @@ import { Header } from "@/components/Header"
 import { Footer } from "@/components/Footer"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { TeamMatchingQuestionnaire } from "@/components/team-matching-questionnaire"
+import { TeamMatchingQuestionnaireWrapper } from "@/components/LazyComponents"
 
 export default function TeamPage() {
   const { user, loading: authLoading } = useAuth()
@@ -23,7 +23,7 @@ export default function TeamPage() {
 
   if (showQuestionnaire) {
     return (
-      <TeamMatchingQuestionnaire 
+      <TeamMatchingQuestionnaireWrapper 
         onClose={() => setShowQuestionnaire(false)}
         onSubmitSuccess={() => {
           // Redirect to homepage after successful submission

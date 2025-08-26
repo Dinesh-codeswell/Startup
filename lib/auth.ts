@@ -36,14 +36,16 @@ export const signUp = async (data: SignUpData) => {
       if (authError.message.includes("already registered") || authError.message.includes("User already registered")) {
         return { user: null, session: null, error: new Error("User already registered. Please sign in.") }
       }
-      throw authError // Re-throw other unexpected errors
+      // For other errors, return error object instead of throwing
+      return { user: null, session: null, error: authError }
     }
 
     // Return the auth data - user will be created but not automatically signed in
     return authData
   } catch (error) {
     console.error("Sign up error:", error)
-    throw error
+    // Return error object instead of throwing
+    return { user: null, session: null, error: error instanceof Error ? error : new Error("Unknown error occurred") }
   }
 }
 

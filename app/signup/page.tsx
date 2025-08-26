@@ -99,8 +99,12 @@ export default function SignupPage() {
       })
 
       // Check if user was created successfully
-      if (result.error && result.error.message.includes("User already registered")) {
-        setError("An account with this email already exists. Please sign in instead.")
+      if (result.error) {
+        if (result.error.message.includes("User already registered") || result.error.message.includes("already registered")) {
+          setError("An account with this email already exists. Please sign in instead.")
+        } else {
+          setError(result.error.message || "Account creation failed. Please try again.")
+        }
       } else if (result.user) {
         setSuccess("Account created successfully! Please sign in to continue.")
         // Redirect to sign-in page after showing success message

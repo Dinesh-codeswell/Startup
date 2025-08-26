@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const refreshProfile = useCallback(async () => {
     if (user) {
@@ -39,11 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
-  }
+  }, [supabase])
 
   useEffect(() => {
     // Get initial session
@@ -79,11 +79,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Handle auth success from URL params (after OAuth redirect)
+    const handleAuthSuccess = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('auth_success') === 'true') {
+        console.log('Auth success detected, forcing refresh...')
+        // Force refresh the session to ensure state is updated
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            setUser(session.user)
+            getProfile(session.user.id).then(setProfile)
+          }
+        })
+        // Clean up URL
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('auth_success')
+        window.history.replaceState({}, '', newUrl.toString())
+      }
+    }
+
+    // Check for auth success on mount and on focus
+    handleAuthSuccess()
+    window.addEventListener('focus', handleAuthSuccess)
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('focus', handleAuthSuccess)
+    }
   }, [])
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    user,
+    profile,
+    loading,
+    signOut,
+    refreshProfile
+  }), [user, profile, loading, signOut, refreshProfile])
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   )
 }
 

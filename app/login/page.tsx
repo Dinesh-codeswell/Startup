@@ -88,19 +88,13 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Construct the callback URL with proper redirect handling
-      const callbackUrl = new URL('/auth/callback', window.location.origin)
-      if (returnTo) {
-        callbackUrl.searchParams.set('redirect_to', returnTo)
-      }
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: callbackUrl.toString(),
+          redirectTo: `${window.location.origin}/auth/callback${returnTo ? `?redirect_to=${encodeURIComponent(returnTo)}` : ''}`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           }
         },
       })

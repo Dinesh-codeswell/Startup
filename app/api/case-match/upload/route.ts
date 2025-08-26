@@ -1,73 +1,96 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { parseCSVToParticipants } from '@/lib/case-match-parser';
-import { runEnhancedIterativeMatching } from '@/lib/enhanced-iterative-matching';
-
-// Force dynamic rendering for admin routes
-export const runtime = 'nodejs';
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
-  // Admin protection removed - endpoint is now publicly accessible
   try {
-    const formData = await request.formData();
-    const file = formData.get('csvFile') as File;
+    // Check authentication
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    // Handle file upload
+    const formData = await request.formData()
+    const file = formData.get('csvFile') as File
     
     if (!file) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'No file provided' },
         { status: 400 }
-      );
+      )
     }
 
     // Validate file type
-    if (!file.type.includes('csv') && !file.name.endsWith('.csv')) {
+    if (!file.name.endsWith('.csv')) {
       return NextResponse.json(
-        { error: 'Invalid file type. Please upload a CSV file.' },
+        { error: 'Only CSV files are allowed' },
         { status: 400 }
-      );
+      )
     }
 
     // Read file content
-    const csvContent = await file.text();
+    const content = await file.text()
     
-    if (!csvContent.trim()) {
+    // Basic CSV validation
+    const lines = content.split('\n').filter(line => line.trim())
+    if (lines.length < 2) {
       return NextResponse.json(
-        { error: 'Empty CSV file' },
+        { error: 'CSV file must contain at least a header and one data row' },
         { status: 400 }
-      );
+      )
     }
 
-    console.log('Processing CSV file:', file.name, 'Size:', file.size, 'bytes');
+    return NextResponse.json({
+      success: true,
+      message: 'File uploaded successfully',
+      fileName: file.name,
+      rowCount: lines.length - 1, // Exclude header
+      preview: lines.slice(0, 3) // First 3 lines for preview
+    })
 
-    // Parse CSV to participants
-    const participants = await parseCSVToParticipants(csvContent);
-    
-    if (participants.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid participants found in CSV file' },
-        { status: 400 }
-      );
-    }
-
-    console.log(`Parsed ${participants.length} participants from CSV`);
-
-    // Run enhanced 30-iteration team matching algorithm
-    const result = runEnhancedIterativeMatching(participants, {
-      maxIterations: 30,
-      minParticipantsPerIteration: 2,
-      logLevel: 'detailed'
-    });
-    
-    console.log(`Enhanced iterative matching complete: ${result.teams.length} teams formed, ${result.unmatched.length} unmatched, ${result.iterations} iterations used`);
-
-    return NextResponse.json(result);
   } catch (error) {
-    console.error('Error in case-match upload API:', error);
+    console.error('Upload error:', error)
     return NextResponse.json(
-      { 
-        error: 'Failed to process CSV file',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }

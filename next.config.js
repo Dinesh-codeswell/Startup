@@ -12,6 +12,19 @@ const nextConfig = {
   // Output configuration for deployment
   output: 'standalone',
   
+  // Webpack configuration to fix module resolution
+  webpack: (config, { isServer }) => {
+    // Fix webpack module resolution issues
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
+    return config;
+  },
+  
   // Ignore build errors
   typescript: {
     ignoreBuildErrors: true,

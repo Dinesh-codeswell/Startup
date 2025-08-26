@@ -1,6 +1,6 @@
 [build]
   publish = ".next"
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "npm ci --legacy-peer-deps && npm run build"
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/"
 
 [build.environment]
@@ -21,12 +21,10 @@
   # Disable experimental features that might trigger Edge Runtime
   NEXT_EXPERIMENTAL_EDGE = "false"
   NEXT_EXPERIMENTAL_MIDDLEWARE = "false"
-  # Force legacy build mode
-  NEXT_PRIVATE_LOCAL_WEBPACK = "true"
+  # Disable problematic webpack features
+  NEXT_WEBPACK = "false"
 
-# Disable Edge Runtime for all functions
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Next.js plugin disabled via NETLIFY_NEXT_PLUGIN_SKIP
 
 # Handle redirects for Next.js app
 [[redirects]]

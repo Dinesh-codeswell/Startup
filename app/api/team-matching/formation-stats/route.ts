@@ -3,11 +3,12 @@ import { AutomatedTeamFormationService } from '@/lib/services/automated-team-for
 
 // Force dynamic rendering for admin routes
 // Runtime configuration removed to fix Edge Runtime build errors
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   // Admin protection removed - endpoint is now publicly accessible
   try {
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl.searchParams
     const days = parseInt(searchParams.get('days') || '7')
     
     const stats = await AutomatedTeamFormationService.getFormationStats(days)

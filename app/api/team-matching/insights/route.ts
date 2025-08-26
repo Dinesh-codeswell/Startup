@@ -4,11 +4,12 @@ import { TeamMatchingService } from '@/lib/services/team-matching-db'
 
 // Force dynamic rendering for admin routes
 // Runtime configuration removed to fix Edge Runtime build errors
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   // Admin protection removed - endpoint is now publicly accessible
   try{
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl.searchParams
     const minCompatibilityScore = parseInt(searchParams.get('minScore') || '80')
     const includeRecommendations = searchParams.get('recommendations') === 'true'
     

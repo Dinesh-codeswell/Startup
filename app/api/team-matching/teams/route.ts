@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TeamMatchingService } from '@/lib/services/team-matching-db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl.searchParams
     
     const query = {
       status: searchParams.get('status') || undefined,

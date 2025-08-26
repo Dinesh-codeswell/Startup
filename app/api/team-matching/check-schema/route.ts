@@ -1,46 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Checking database schema...')
 
-    // Check the table schema
-    const { data: schemaData, error: schemaError } = await supabaseAdmin
-      .from('information_schema.columns')
-      .select('column_name, data_type, is_nullable')
-      .eq('table_name', 'team_matching_submissions')
-      .order('ordinal_position')
+    // Simple table existence check instead of information_schema queries
+    const { data: testData, error: testError } = await supabaseAdmin
+      .from('team_matching_submissions')
+      .select('id')
+      .limit(1)
 
-    if (schemaError) {
-      console.error('Error fetching schema:', schemaError)
-    } else {
-      console.log('Table schema:')
-      schemaData?.forEach(col => {
-        console.log(`  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`)
-      })
+    if (testError) {
+      console.error('Error accessing team_matching_submissions table:', testError)
+      return NextResponse.json({
+        success: false,
+        error: 'Table access failed',
+        details: testError.message
+      }, { status: 500 })
     }
 
-    // Check for triggers
-    const { data: triggerData, error: triggerError } = await supabaseAdmin
-      .from('information_schema.triggers')
-      .select('trigger_name, event_manipulation, action_statement')
-      .eq('event_object_table', 'team_matching_submissions')
-
-    if (triggerError) {
-      console.error('Error fetching triggers:', triggerError)
-    } else {
-      console.log('\nTable triggers:')
-      triggerData?.forEach(trigger => {
-        console.log(`  - ${trigger.trigger_name}: ${trigger.event_manipulation}`)
-        console.log(`    Action: ${trigger.action_statement}`)
-      })
-    }
+    console.log('✅ Database schema check completed successfully')
 
     return NextResponse.json({
       success: true,
-      schema: schemaData,
-      triggers: triggerData
+      message: 'Database schema is accessible',
+      tableExists: true
     })
 
   } catch (error) {

@@ -9,6 +9,10 @@ import { AuthStateHandler } from "@/components/AuthStateHandler"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
 import ErrorBoundary from "@/components/ErrorBoundary"
 import { Suspense } from "react"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
+
+// Force Node.js runtime instead of Edge Runtime
+export const runtime = 'nodejs'
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -33,8 +37,6 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
 }
-
-import { LoadingSpinner } from "@/components/LoadingSpinner"
 
 // Loading component for better UX
 function LoadingFallback() {

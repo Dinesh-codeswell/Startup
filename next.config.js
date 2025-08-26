@@ -5,9 +5,13 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react'],
     // Enable server components external packages
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    // Force Node.js runtime instead of Edge Runtime
+    runtime: undefined, // Disable experimental runtime features
   },
+  
   // Disable source maps in production for faster builds
   productionBrowserSourceMaps: false,
+  
   // Optimize images with better settings
   images: {
     formats: ['image/webp', 'image/avif'],
@@ -69,6 +73,7 @@ const nextConfig = {
       },
     ],
   },
+  
   // Enable compression
   compress: true,
   // Enable SWC minification
@@ -81,6 +86,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Ensure proper static file serving
   assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
+  
   // Ignore build errors from backend directory
   typescript: {
     ignoreBuildErrors: true,
@@ -91,7 +97,7 @@ const nextConfig = {
 
   // Webpack configuration
   webpack: (config, { isServer, webpack }) => {
-    // Ignore backend files during frontend build
+    // Handle client-side fallbacks - Enhanced for Spline compatibility
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -101,6 +107,12 @@ const nextConfig = {
         net: false,
         tls: false,
         crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
       };
     }
 
@@ -120,6 +132,18 @@ const nextConfig = {
         })
       );
     }
+    
+    // Handle @splinetool/runtime specifically to avoid Edge Runtime issues
+    config.module.rules.push({
+      test: /node_modules\/@splinetool\/runtime/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['next/babel'],
+          plugins: [],
+        },
+      },
+    });
     
     // Fix module loading issues and webpack runtime errors
     config.module.rules.push({
@@ -142,7 +166,7 @@ const nextConfig = {
       },
     });
 
-    // Suppress specific warnings for Supabase realtime and Edge Runtime
+    // Suppress specific warnings for Supabase realtime, Edge Runtime, and Spline
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
       // Supabase realtime WebSocket warnings
@@ -162,6 +186,15 @@ const nextConfig = {
       {
         module: /node_modules\/@supabase\/supabase-js/,
         message: /A Node\.js API is used \(process\.version at line: \d+\) which is not supported in the Edge Runtime/,
+      },
+      // Spline runtime warnings
+      {
+        module: /node_modules\/@splinetool\/runtime/,
+        message: /Dynamic Code Evaluation/,
+      },
+      {
+        module: /node_modules\/@splinetool\/runtime/,
+        message: /eval.*not allowed in Edge Runtime/,
       },
       // General dynamic import warnings for WebSocket libraries
       {

@@ -7,4 +7,53 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
   NPM_CONFIG_PACKAGE_MANAGER = "npm"
+  NEXT_PRIVATE_STANDALONE = "true"
+  # Force Node.js runtime for Spline compatibility
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  # Optimize build performance
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Handle Edge Runtime issues
+  NODE_OPTIONS = "--max-old-space-size=4096"
 
+# Handle redirects for Next.js app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  conditions = {Role = ["admin", "editor"]}
+
+# Handle API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Headers for static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Headers for images
+[[headers]]
+  for = "/*.{png,jpg,jpeg,gif,svg,webp,avif,ico}"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# Headers for fonts
+[[headers]]
+  for = "/*.{woff,woff2,ttf,eot}"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+    Access-Control-Allow-Origin = "*"

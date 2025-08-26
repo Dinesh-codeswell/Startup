@@ -1,244 +1,184 @@
-12:03:13 PM: build-image version: 9b5eda74bd0982ea06a6fdf058a78c4ba15c7b10 (noble)
-12:03:13 PM: buildbot version: 9b5eda74bd0982ea06a6fdf058a78c4ba15c7b10
-12:03:13 PM: Building without cache
-12:03:13 PM: Starting to prepare the repo for build
-12:03:14 PM: No cached dependencies found. Cloning fresh repo
-12:03:14 PM: git clone --filter=blob:none https://github.com/Dinesh-codeswell/Startup
-12:03:14 PM: Preparing Git Reference refs/heads/main
-12:03:16 PM: Custom build command detected. Proceeding with the specified command: 'npm ci --legacy-peer-deps && npm run build'
-12:03:16 PM: Custom ignore command detected. Proceeding with the specified command: 'git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/'
-12:03:16 PM: Starting to install dependencies
-12:03:17 PM: Attempting Node.js version '20' from .nvmrc
-12:03:17 PM: Downloading and installing node v20.19.4...
-12:03:17 PM: Downloading https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz...
-12:03:18 PM: Computing checksum with sha256sum
-12:03:18 PM: Checksums matched!
-12:03:19 PM: Now using node v20.19.4 (npm v10.8.2)
-12:03:19 PM: Enabling Node.js Corepack
-12:03:20 PM: Started restoring cached build plugins
-12:03:20 PM: Finished restoring cached build plugins
-12:03:20 PM: Started restoring cached corepack dependencies
-12:03:20 PM: Finished restoring cached corepack dependencies
-12:03:20 PM: No npm workspaces detected
-12:03:20 PM: Started restoring cached node modules
-12:03:20 PM: Finished restoring cached node modules
-12:03:20 PM: Installing npm packages using npm version 10.8.2
-12:03:22 PM: npm warn deprecated multer@1.4.5-lts.2: Multer 1.x is impacted by a number of vulnerabilities, which have been patched in 2.x. You should upgrade to the latest 2.x version.
-12:03:36 PM: > my-v0-project@0.1.0 postinstall
-12:03:36 PM: > echo 'Dependencies installed successfully'
-12:03:36 PM: Dependencies installed successfully
-12:03:36 PM: added 642 packages in 16s
-12:03:36 PM: npm packages installed
-12:03:36 PM: Successfully installed dependencies
-12:03:36 PM: Starting build script
-12:03:37 PM: Detected 3 framework(s)
-12:03:37 PM: "next" at version "14.2.16"
-12:03:37 PM: "remix" at version "2.17.0"
-12:03:37 PM: "svelte-kit" at version "2.36.2"
-12:03:37 PM: Section completed: initializing
-12:03:38 PM: ​
-12:03:38 PM: Netlify Build                                                 
-12:03:38 PM: ────────────────────────────────────────────────────────────────
-12:03:38 PM: ​
-12:03:38 PM: ❯ Version
-12:03:38 PM:   @netlify/build 35.1.2
-12:03:38 PM: ​
-12:03:38 PM: ❯ Flags
-12:03:38 PM:   accountId: 682944c53ccbcbdd9854f222
-12:03:38 PM:   baseRelDir: true
-12:03:38 PM:   buildId: 68ad5528925497e86c8dfa0d
-12:03:38 PM:   deployId: 68ad5528925497e86c8dfa0f
-12:03:38 PM: ​
-12:03:38 PM: ❯ Current directory
-12:03:38 PM:   /opt/build/repo
-12:03:38 PM: ​
-12:03:38 PM: ❯ Config file
-12:03:38 PM:   /opt/build/repo/netlify.toml
-12:03:38 PM: ​
-12:03:38 PM: ❯ Context
-12:03:38 PM:   production
-12:03:39 PM: ​
-12:03:39 PM: ❯ Installing extensions
-12:03:39 PM:    - neon
-12:04:01 PM: ​
-12:04:01 PM: ❯ Using Next.js Runtime - v5.12.1
-12:04:01 PM: ​
-12:04:01 PM: ❯ Loading extensions
-12:04:01 PM:    - neon
-12:04:02 PM: No Next.js cache to restore
-12:04:02 PM: ​
-12:04:02 PM: build.command from netlify.toml                               
-12:04:02 PM: ────────────────────────────────────────────────────────────────
-12:04:02 PM: ​
-12:04:02 PM: $ npm ci --legacy-peer-deps && npm run build
-12:04:08 PM: npm warn deprecated multer@1.4.5-lts.2: Multer 1.x is impacted by a number of vulnerabilities, which have been patched in 2.x. You should upgrade to the latest 2.x version.
-12:04:17 PM: > my-v0-project@0.1.0 postinstall
-12:04:17 PM: > echo 'Dependencies installed successfully'
-12:04:17 PM: Dependencies installed successfully
-12:04:17 PM: added 642 packages in 15s
-12:04:17 PM: > my-v0-project@0.1.0 build
-12:04:17 PM: > cross-env NEXT_RUNTIME=nodejs next build
-12:04:18 PM: ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
-12:04:18 PM:   ▲ Next.js 14.2.16
-12:04:18 PM:    Creating an optimized production build ...
-12:04:32 PM:  ✓ Compiled successfully
-12:04:32 PM:    Skipping validation of types
-12:04:32 PM:    Skipping linting
-12:04:33 PM:    Collecting page data ...
-12:04:37 PM:    Generating static pages (0/50) ...
-12:04:37 PM: 🔍 Getting truly unmatched submissions...
-12:04:38 PM:    Generating static pages (12/50)
-12:04:38 PM:    Generating static pages (24/50)
-12:04:38 PM:    Generating static pages (37/50)
-12:04:39 PM: Total submissions: 0
-12:04:39 PM: Matched submissions (in teams): 0
-12:04:39 PM: Unmatched submissions: 0
-12:04:42 PM:  ✓ Generating static pages (50/50)
-12:04:42 PM:    Finalizing page optimization ...
-12:04:42 PM:    Collecting build traces ...
-12:04:47 PM: Route (app)                                   Size     First Load JS
-12:04:47 PM: ┌ ○ /                                         17.5 kB         175 kB
-12:04:47 PM: ├ ○ /_not-found                               876 B          88.4 kB
-12:04:47 PM: ├ ○ /about                                    4.75 kB         162 kB
-12:04:47 PM: ├ ○ /access-denied                            2.34 kB        96.7 kB
-12:04:47 PM: ├ ○ /admin/case-match                         4.74 kB        96.1 kB
-12:04:47 PM: ├ ○ /admin/dashboard                          3.98 kB        91.5 kB
-12:04:47 PM: ├ ○ /admin/unauthorized                       4 kB            143 kB
-12:04:47 PM: ├ ƒ /api/admin/validate-session               0 B                0 B
-12:04:47 PM: ├ ƒ /api/case-match/analyze                   0 B                0 B
-12:04:47 PM: ├ ƒ /api/case-match/save-teams                0 B                0 B
-12:04:47 PM: ├ ƒ /api/case-match/upload                    0 B                0 B
-12:04:47 PM: ├ ○ /api/database/status                      0 B                0 B
-12:04:47 PM: ├ ƒ /api/resources/[id]/views                 0 B                0 B
-12:04:47 PM: ├ ƒ /api/rl-metrics                           0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-chat/messages                   0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-chat/reactions                  0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-chat/read                       0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-chat/typing                     0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/approve                0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/automated-formation    0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/check-schema           0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/create-team            0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/fix-database-schema    0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/force-status-update    0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/form-teams             0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/formation-stats        0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/insights               0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/notifications          0 B                0 B
-12:04:47 PM: ├ ○ /api/team-matching/stats                  0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/submissions            0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/submit                 0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/teams                  0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/test-data              0 B                0 B
-12:04:47 PM: ├ ƒ /api/team-matching/test-status-update     0 B                0 B
-12:04:47 PM: ├ ○ /api/team-matching/unmatched-submissions  0 B                0 B
-12:04:47 PM: ├ ○ /auth-test                                2.64 kB         130 kB
-12:04:47 PM: ├ ƒ /auth/callback                            0 B                0 B
-12:04:47 PM: ├ ○ /case-match                               5.07 kB        96.4 kB
-12:04:47 PM: ├ ○ /community                                1.64 kB         159 kB
-12:04:47 PM: ├ ○ /contact                                  1.63 kB         159 kB
-12:04:47 PM: ├ ○ /events                                   1.64 kB         159 kB
-12:04:47 PM: ├ ○ /login                                    2.98 kB         151 kB
-12:04:47 PM: ├ ○ /opportunities                            1.64 kB         159 kB
-12:04:47 PM: ├ ○ /privacy                                  209 B           158 kB
-12:04:47 PM: ├ ○ /profile                                  2.86 kB         161 kB
-12:04:47 PM: ├ ○ /resources                                30.7 kB         195 kB
-12:04:47 PM: ├ ƒ /resources/[id]                           4.42 kB        91.9 kB
-12:04:47 PM: ├ ○ /rl-dashboard                             9.01 kB        96.5 kB
-12:04:47 PM: ├ ○ /signup                                   3.64 kB         151 kB
-12:04:47 PM: ├ ○ /team                                     3.02 kB         161 kB
-12:04:47 PM: ├ ○ /team-dashboard                           10.1 kB         175 kB
-12:04:47 PM: ├ ○ /team/dashboard                           15.6 kB         103 kB
-12:04:47 PM: ├ ○ /terms                                    209 B           158 kB
-12:04:47 PM: ├ ○ /test-admin-context                       4.06 kB         146 kB
-12:04:47 PM: └ ○ /test-rl                                  675 B            95 kB
-12:04:47 PM: + First Load JS shared by all                 87.5 kB
-12:04:47 PM:   ├ chunks/2117-f1a69611e666e8d8.js           31.6 kB
-12:04:47 PM:   ├ chunks/fd9d1056-ecb5f7c150ad5918.js       53.6 kB
-12:04:47 PM:   └ other shared chunks (total)               2.26 kB
-12:04:47 PM: ƒ Middleware                                  26.6 kB
-12:04:47 PM: ○  (Static)   prerendered as static content
-12:04:47 PM: ƒ  (Dynamic)  server-rendered on demand
-12:04:47 PM: ​
-12:04:47 PM: (build.command completed in 45.3s)
-12:04:48 PM: Next.js cache saved
-12:04:48 PM: Next.js cache saved
-12:04:48 PM: ​
-12:04:48 PM: Functions bundling                                            
-12:04:48 PM: ────────────────────────────────────────────────────────────────
-12:04:48 PM: ​
-12:04:48 PM: Packaging Functions from .netlify/functions-internal directory:
-12:04:48 PM:  - ___netlify-server-handler/___netlify-server-handler.mjs
-12:04:48 PM: ​
-12:04:50 PM: ​
-12:04:50 PM: (Functions bundling completed in 1.2s)
-12:04:50 PM: ​
-12:04:50 PM: Edge Functions bundling                                       
-12:04:50 PM: ────────────────────────────────────────────────────────────────
-12:04:50 PM: ​
-12:04:50 PM: Packaging Edge Functions from .netlify/edge-functions directory:
-12:04:50 PM:  - ___netlify-edge-handler-middleware
-12:04:52 PM: ​
-12:04:52 PM: (Edge Functions bundling completed in 2.8s)
-12:04:53 PM: ​
-12:04:53 PM: Deploy site                                                   
-12:04:53 PM: ────────────────────────────────────────────────────────────────
-12:04:53 PM: ​
-12:04:53 PM: Starting to deploy site from '.next'
-12:04:53 PM: Calculating files to upload
-12:04:53 PM: 9 new file(s) to upload
-12:04:53 PM: 1 new function(s) to upload
-12:05:00 PM: Skipping form detection
-12:05:00 PM: Post processing - header rules
-12:05:00 PM: Post processing - redirect rules
-12:05:00 PM: Post processing done
-12:05:00 PM: Section completed: postprocessing
-12:05:01 PM: Site is live ✨
-12:05:00 PM: Section completed: deploying
-12:05:02 PM: Finished waiting for live deploy in 2.048s
-12:05:02 PM: Site deploy was successfully initiated
-12:05:02 PM: ​
-12:05:02 PM: (Deploy site completed in 9.2s)
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unpipe listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (Use `node --trace-warnings ...` to show where the warning was created)
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 finish listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unpipe listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: (node:2111) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 finish listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-12:05:03 PM: ​
-12:05:03 PM: Netlify Build Complete                                        
-12:05:03 PM: ────────────────────────────────────────────────────────────────
-12:05:03 PM: ​
-12:05:03 PM: (Netlify Build completed in 1m 25.6s)
-12:05:04 PM: Caching artifacts
-12:05:04 PM: Started saving node modules
-12:05:04 PM: Finished saving node modules
-12:05:04 PM: Started saving build plugins
-12:05:04 PM: Finished saving build plugins
-12:05:04 PM: Started saving bun cache
-12:05:04 PM: Finished saving bun cache
-12:05:04 PM: Started saving go cache
-12:05:00 PM: Starting post processing
-12:05:06 PM: Finished saving go cache
-12:05:06 PM: Started saving python cache
-12:05:07 PM: Finished saving python cache
-12:05:07 PM: Started saving ruby cache
-12:05:09 PM: Finished saving ruby cache
-12:05:09 PM: Started saving corepack cache
-12:05:09 PM: Finished saving corepack cache
-12:05:09 PM: Started saving emacs cask dependencies
-12:05:09 PM: Finished saving emacs cask dependencies
-12:05:09 PM: Started saving maven dependencies
-12:05:09 PM: Finished saving maven dependencies
-12:05:09 PM: Started saving boot dependencies
-12:05:09 PM: Finished saving boot dependencies
-12:05:09 PM: Started saving rust rustup cache
-12:05:09 PM: Finished saving rust rustup cache
-12:05:09 PM: Build script success
-12:05:09 PM: Section completed: building
-12:05:18 PM: Uploading Cache of size 544.6MB
-12:05:19 PM: Section completed: cleanup
-12:05:19 PM: Finished processing build request in 2m5.852s
+12:14:14 PM: Netlify Build                                                 
+12:14:14 PM: ────────────────────────────────────────────────────────────────
+12:14:14 PM: ​
+12:14:14 PM: ❯ Version
+12:14:14 PM:   @netlify/build 35.1.2
+12:14:14 PM: ​
+12:14:14 PM: ❯ Flags
+12:14:14 PM:   accountId: 682944c53ccbcbdd9854f222
+12:14:14 PM:   baseRelDir: true
+12:14:14 PM:   buildId: 68ad5777736e5a615eb0cac8
+12:14:14 PM:   deployId: 68ad5777736e5a615eb0caca
+12:14:14 PM: ​
+12:14:14 PM: ❯ Current directory
+12:14:14 PM:   /opt/build/repo
+12:14:14 PM: ​
+12:14:14 PM: ❯ Config file
+12:14:14 PM:   /opt/build/repo/netlify.toml
+12:14:14 PM: ​
+12:14:14 PM: ❯ Context
+12:14:14 PM:   production
+12:14:14 PM: ​
+12:14:14 PM: ❯ Installing extensions
+12:14:14 PM:    - neon
+12:14:35 PM: ​
+12:14:35 PM: ❯ Using Next.js Runtime - v5.12.1
+12:14:35 PM: ​
+12:14:35 PM: ❯ Loading extensions
+12:14:35 PM:    - neon
+12:14:37 PM: No Next.js cache to restore
+12:14:37 PM: ​
+12:14:37 PM: build.command from netlify.toml                               
+12:14:37 PM: ────────────────────────────────────────────────────────────────
+12:14:37 PM: ​
+12:14:37 PM: $ npm ci --legacy-peer-deps && npm run build && cp -r .next/static .next/standalone/ && cp -r public .next/standalone/
+12:14:42 PM: npm warn deprecated multer@1.4.5-lts.2: Multer 1.x is impacted by a number of vulnerabilities, which have been patched in 2.x. You should upgrade to the latest 2.x version.
+12:14:50 PM: > my-v0-project@0.1.0 postinstall
+12:14:50 PM: > echo 'Dependencies installed successfully'
+12:14:50 PM: Dependencies installed successfully
+12:14:50 PM: added 642 packages in 13s
+12:14:50 PM: > my-v0-project@0.1.0 build
+12:14:50 PM: > cross-env NEXT_RUNTIME=nodejs next build
+12:14:50 PM: ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+12:14:50 PM:   ▲ Next.js 14.2.16
+12:14:50 PM:    Creating an optimized production build ...
+12:15:05 PM:  ✓ Compiled successfully
+12:15:05 PM:    Skipping validation of types
+12:15:05 PM:    Skipping linting
+12:15:05 PM:    Collecting page data ...
+12:15:09 PM:    Generating static pages (0/50) ...
+12:15:10 PM:    Generating static pages (12/50)
+12:15:10 PM:    Generating static pages (24/50)
+12:15:10 PM: 🔍 Getting truly unmatched submissions...
+12:15:10 PM:    Generating static pages (37/50)
+12:15:11 PM: Total submissions: 0
+12:15:11 PM: Matched submissions (in teams): 0
+12:15:11 PM: Unmatched submissions: 0
+12:15:12 PM:  ✓ Generating static pages (50/50)
+12:15:13 PM:    Finalizing page optimization ...
+12:15:13 PM:    Collecting build traces ...
+12:15:21 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+12:15:19 PM: Route (app)                                   Size     First Load JS
+12:15:19 PM: ┌ ○ /                                         17.5 kB         175 kB
+12:15:19 PM: ├ ○ /_not-found                               876 B          88.4 kB
+12:15:19 PM: ├ ○ /about                                    4.75 kB         162 kB
+12:15:19 PM: ├ ○ /access-denied                            2.34 kB        96.7 kB
+12:15:19 PM: ├ ○ /admin/case-match                         4.74 kB        96.1 kB
+12:15:19 PM: ├ ○ /admin/dashboard                          3.98 kB        91.5 kB
+12:15:19 PM: ├ ○ /admin/unauthorized                       4 kB            143 kB
+12:15:19 PM: ├ ƒ /api/admin/validate-session               0 B                0 B
+12:15:19 PM: ├ ƒ /api/case-match/analyze                   0 B                0 B
+12:15:19 PM: ├ ƒ /api/case-match/save-teams                0 B                0 B
+12:15:19 PM: ├ ƒ /api/case-match/upload                    0 B                0 B
+12:15:19 PM: ├ ○ /api/database/status                      0 B                0 B
+12:15:19 PM: ├ ƒ /api/resources/[id]/views                 0 B                0 B
+12:15:19 PM: ├ ƒ /api/rl-metrics                           0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-chat/messages                   0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-chat/reactions                  0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-chat/read                       0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-chat/typing                     0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/approve                0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/automated-formation    0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/check-schema           0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/create-team            0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/fix-database-schema    0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/force-status-update    0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/form-teams             0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/formation-stats        0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/insights               0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/notifications          0 B                0 B
+12:15:19 PM: ├ ○ /api/team-matching/stats                  0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/submissions            0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/submit                 0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/teams                  0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/test-data              0 B                0 B
+12:15:19 PM: ├ ƒ /api/team-matching/test-status-update     0 B                0 B
+12:15:19 PM: ├ ○ /api/team-matching/unmatched-submissions  0 B                0 B
+12:15:19 PM: ├ ○ /auth-test                                2.64 kB         130 kB
+12:15:19 PM: ├ ƒ /auth/callback                            0 B                0 B
+12:15:19 PM: ├ ○ /case-match                               5.07 kB        96.4 kB
+12:15:19 PM: ├ ○ /community                                1.64 kB         159 kB
+12:15:19 PM: ├ ○ /contact                                  1.63 kB         159 kB
+12:15:19 PM: ├ ○ /events                                   1.64 kB         159 kB
+12:15:19 PM: ├ ○ /login                                    2.98 kB         151 kB
+12:15:19 PM: ├ ○ /opportunities                            1.64 kB         159 kB
+12:15:19 PM: ├ ○ /privacy                                  209 B           158 kB
+12:15:19 PM: ├ ○ /profile                                  2.86 kB         161 kB
+12:15:19 PM: ├ ○ /resources                                30.7 kB         195 kB
+12:15:19 PM: ├ ƒ /resources/[id]                           4.42 kB        91.9 kB
+12:15:19 PM: ├ ○ /rl-dashboard                             9.01 kB        96.5 kB
+12:15:19 PM: ├ ○ /signup                                   3.64 kB         151 kB
+12:15:19 PM: ├ ○ /team                                     3.02 kB         161 kB
+12:15:19 PM: ├ ○ /team-dashboard                           10.1 kB         175 kB
+12:15:19 PM: ├ ○ /team/dashboard                           15.6 kB         103 kB
+12:15:19 PM: ├ ○ /terms                                    209 B           158 kB
+12:15:19 PM: ├ ○ /test-admin-context                       4.06 kB         146 kB
+12:15:19 PM: └ ○ /test-rl                                  675 B            95 kB
+12:15:19 PM: + First Load JS shared by all                 87.5 kB
+12:15:19 PM:   ├ chunks/2117-f1a69611e666e8d8.js           31.6 kB
+12:15:19 PM:   ├ chunks/fd9d1056-ecb5f7c150ad5918.js       53.6 kB
+12:15:19 PM:   └ other shared chunks (total)               2.26 kB
+12:15:19 PM: ƒ Middleware                                  26.6 kB
+12:15:19 PM: ○  (Static)   prerendered as static content
+12:15:19 PM: ƒ  (Dynamic)  server-rendered on demand
+12:15:20 PM: ​
+12:15:20 PM: (build.command completed in 42.9s)
+12:15:20 PM: ​
+12:15:20 PM: Plugin "@netlify/plugin-nextjs" failed                        
+12:15:20 PM: ────────────────────────────────────────────────────────────────
+12:15:20 PM: ​
+12:15:20 PM:   Error message
+12:15:20 PM:   Error: Your publish directory does not contain expected Next.js build output. Please check your build settings
+12:15:20 PM: ​
+12:15:20 PM:   Plugin details
+12:15:20 PM:   Package:        @netlify/plugin-nextjs
+12:15:20 PM:   Version:        5.12.1
+12:15:20 PM:   Repository:     git+https://github.com/opennextjs/opennextjs-netlify.git
+12:15:20 PM:   npm link:       https://www.npmjs.com/package/@netlify/plugin-nextjs
+12:15:20 PM:   Report issues:  https://github.com/opennextjs/opennextjs-netlify/issues
+12:15:20 PM: ​
+12:15:20 PM:   Error location
+12:15:20 PM:   In "onBuild" event in "@netlify/plugin-nextjs" from netlify.toml
+12:15:20 PM: ​
+12:15:20 PM:   Resolved config
+12:15:20 PM:   build:
+12:15:20 PM:     command: npm ci --legacy-peer-deps && npm run build && cp -r .next/static
+12:15:20 PM:       .next/standalone/ && cp -r public .next/standalone/
+12:15:20 PM:     commandOrigin: config
+12:15:20 PM:     environment:
+12:15:20 PM:       - NEXT_PUBLIC_SUPABASE_ANON_KEY
+12:15:20 PM:       - NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+12:15:20 PM:       - NEXT_PUBLIC_SUPABASE_URL
+12:15:20 PM:       - SUPABASE_SERVICE_ROLE_KEY
+12:15:20 PM:       - NODE_VERSION
+12:15:20 PM:       - NPM_FLAGS
+12:15:20 PM:       - NEXT_PRIVATE_STANDALONE
+12:15:20 PM:     ignore: git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/
+12:15:20 PM:     publish: /opt/build/repo/.next/standalone
+12:15:20 PM:     publishOrigin: config
+12:15:20 PM:   headers:
+12:15:20 PM:     - for: /*
+      values:
+        Permissions-Policy: camera=(), microphone=(), geolocation=()
+        Referrer-Policy: strict-origin-when-cross-origin
+        X-Content-Type-Options: nosniff
+        X-Frame-Options: SAMEORIGIN
+        X-XSS-Protection: 1; mode=block
+    - for: /static/*
+      values:
+        Cache-Control: public, max-age=31536000, immutable
+    - for: /*.{png,jpg,jpeg,gif,svg,webp,avif,ico}
+      values:
+        Cache-Control: public, max-age=31536000
+    - for: /*.{woff,woff2,ttf,eot}
+      values:
+        Access-Control-Allow-Origin: "*"
+        Cache-Control: public, max-age=31536000
+  headersOrigin: config
+  plugins:
+    - inputs: {}
+      origin: config
+      package: "@netlify/plugin-nextjs"
+12:15:20 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+12:15:21 PM: Failing build: Failed to build site
+12:15:21 PM: Finished processing build request in 1m32.463s

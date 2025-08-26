@@ -1,5 +1,6 @@
 [build]
-  command = "npm ci --legacy-peer-deps && npm run build"
+  command = "npm ci --legacy-peer-deps && npm run build && cp -r .next/static .next/standalone/ && cp -r public .next/standalone/"
+  publish = ".next/standalone"
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/"
 
 [build.environment]
@@ -9,20 +10,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# Handle redirects for Next.js app
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
-  conditions = {Role = ["admin", "editor"]}
-
-# Handle API routes
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
 
 # Security headers
 [[headers]]

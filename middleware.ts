@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Temporarily disable runtime export to fix build issues
-// export const runtime = 'nodejs'
+// Force Node.js runtime to prevent Edge Runtime issues
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // Admin configuration - matches the admin-utils.ts configuration
 const AUTHORIZED_ADMIN_EMAILS = [

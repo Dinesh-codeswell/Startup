@@ -72,11 +72,12 @@ const nextConfig = {
   swcMinify: true,
   // Optimize output and force Node.js runtime
   output: 'standalone',
-  // Disable Edge Runtime completely
+  
+  // Completely disable Edge Runtime
   experimental: {
     optimizePackageImports: ['lucide-react'],
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
-    // Disable Edge Runtime features
+    // Disable Edge Runtime features completely
     esmExternals: false,
     forceSwcTransforms: true,
     swcMinify: true,
@@ -84,9 +85,6 @@ const nextConfig = {
   
   // Force SWC compiler instead of Babel
   swcMinify: true,
-  
-  // Force server target to avoid Edge Runtime
-  target: 'server',
 
   // Enable static optimization
   trailingSlash: false,
@@ -105,6 +103,11 @@ const nextConfig = {
 
   // Webpack configuration
   webpack: (config, { isServer, webpack }) => {
+    // Import custom plugin to remove babel runtime
+    const BabelRuntimeRemovalPlugin = require('./lib/webpack-babel-runtime-plugin');
+    
+    // Add the custom plugin to completely remove babel runtime
+    config.plugins.push(new BabelRuntimeRemovalPlugin());
     // Handle client-side fallbacks - Enhanced for Spline compatibility
     if (!isServer) {
       config.resolve.fallback = {
@@ -122,29 +125,125 @@ const nextConfig = {
         https: false,
         assert: false,
         '@babel/runtime/regenerator': false,
+        '@babel/runtime': false,
+        'regenerator-runtime': false,
       };
     }
 
-    // Fix "self is not defined" error
+    // Fix "self is not defined" error and merge with existing aliases
     config.resolve.alias = {
       ...config.resolve.alias,
       'ws': false,
       'bufferutil': false,
       'utf-8-validate': false,
+      // Force problematic babel runtime modules to use empty module
+      '@babel/runtime/regenerator': require.resolve('./lib/empty-module.js'),
+      '@babel/runtime/helpers/asyncToGenerator': require.resolve('./lib/empty-module.js'),
+      'regenerator-runtime': require.resolve('./lib/empty-module.js'),
     };
 
-    // Define global variables for browser environment
-    if (!isServer) {
+    // Define global variables for both browser and server environment
+    config.plugins.push(
+      new webpack.DefinePlugin({
+        'global': 'globalThis',
+        'self': isServer ? 'global' : 'self',
+        'window': isServer ? 'undefined' : 'window',
+      })
+    );
+    
+    // Additional server-side globals
+    if (isServer) {
       config.plugins.push(
         new webpack.DefinePlugin({
-          'global': 'globalThis',
+          'self': 'global',
+          'window': 'undefined',
         })
       );
     }
     
-    // Handle @splinetool/runtime specifically to avoid Edge Runtime issues
-    // Exclude from server-side processing to prevent Dynamic Code Evaluation errors
-    if (!isServer) {
+    // Completely separate client and server builds
+    if (isServer) {
+      // Aggressive server-side externals to prevent client code inclusion
+      config.externals = [
+        ...(config.externals || []),
+        // Externalize all client-side packages
+        '@splinetool/runtime',
+        '@babel/runtime',
+        'regenerator-runtime',
+        'three',
+        'cannon',
+        'cannon-es',
+        // Pattern-based exclusions
+        /^@splinetool\/.*/,
+        /^three\/.*/,
+        /^cannon\/.*/,
+        /^@babel\/runtime\/.*/,
+        // Custom function to handle all client-side modules
+        ({ context, request }, callback) => {
+          // Externalize any module that might contain client-side code
+          if (
+            request?.includes('@splinetool') ||
+            request?.includes('three') ||
+            request?.includes('cannon') ||
+            request?.includes('@babel/runtime') ||
+            request?.includes('regenerator-runtime')
+          ) {
+            return callback(null, `commonjs ${request}`);
+          }
+          callback();
+        }
+      ];
+      
+      // Completely disable splitChunks for server to prevent vendors.js creation
+       config.optimization = config.optimization || {};
+       config.optimization.splitChunks = false;
+      
+      // Add comprehensive server-side polyfills
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'typeof window': '"undefined"',
+          'typeof document': '"undefined"',
+          'typeof navigator': '"undefined"',
+          'typeof location': '"undefined"',
+          'typeof self': '"undefined"',
+          'self': 'global',
+          'window': 'undefined',
+          'document': 'undefined',
+          'navigator': 'undefined',
+          'location': 'undefined',
+        })
+      );
+      
+      // Add a plugin to completely remove client-side webpack runtime
+      config.plugins.push({
+        apply: (compiler) => {
+          compiler.hooks.compilation.tap('RemoveClientRuntime', (compilation) => {
+            compilation.hooks.processAssets.tap(
+              {
+                name: 'RemoveClientRuntime',
+                stage: compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
+              },
+              (assets) => {
+                // Remove any assets that contain client-side webpack runtime
+                Object.keys(assets).forEach((assetName) => {
+                  if (assetName.includes('vendors') || assetName.includes('runtime')) {
+                    const source = assets[assetName].source();
+                    if (typeof source === 'string' && source.includes('self.webpackChunk')) {
+                      // Replace with empty module
+                      assets[assetName] = {
+                        source: () => 'module.exports = {};',
+                        size: () => 'module.exports = {};'.length,
+                      };
+                    }
+                  }
+                });
+              }
+            );
+          });
+        },
+      });
+    } else {
+      // Client-side configuration for Spline
       config.module.rules.push({
         test: /node_modules\/@splinetool\/runtime/,
         use: {
@@ -155,31 +254,7 @@ const nextConfig = {
           },
         },
       });
-    } else {
-       // Exclude problematic packages from server-side bundle
-       config.externals = config.externals || [];
-       if (Array.isArray(config.externals)) {
-         config.externals.push(
-           '@splinetool/runtime', 
-           '@babel/runtime/regenerator',
-           '@babel/runtime',
-           'regenerator-runtime'
-         );
-       } else if (typeof config.externals === 'function') {
-         const originalExternals = config.externals;
-         config.externals = (context, request, callback) => {
-           if ([
-             '@splinetool/runtime',
-             '@babel/runtime/regenerator', 
-             '@babel/runtime',
-             'regenerator-runtime'
-           ].includes(request)) {
-             return callback(null, 'commonjs ' + request);
-           }
-           return originalExternals(context, request, callback);
-         };
-       }
-     }
+    }
     
     // Fix module loading issues and webpack runtime errors
     config.module.rules.push({

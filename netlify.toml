@@ -8,12 +8,19 @@
   NPM_FLAGS = "--legacy-peer-deps"
   NPM_CONFIG_PACKAGE_MANAGER = "npm"
   NEXT_PRIVATE_STANDALONE = "true"
-  # Force Node.js runtime for Spline compatibility
+  # Force Node.js runtime completely
   NETLIFY_NEXT_PLUGIN_SKIP = "false"
   # Optimize build performance
   NEXT_TELEMETRY_DISABLED = "1"
   # Handle Edge Runtime issues
   NODE_OPTIONS = "--max-old-space-size=4096"
+  # Force Node.js runtime environment variables
+  NEXT_RUNTIME = "nodejs"
+  NEXT_DISABLE_EDGE_RUNTIME = "true"
+  NEXT_FORCE_NODEJS_RUNTIME = "true"
+  # Disable experimental features that might trigger Edge Runtime
+  NEXT_EXPERIMENTAL_EDGE = "false"
+  NEXT_EXPERIMENTAL_MIDDLEWARE = "false"
 
 # Handle redirects for Next.js app
 [[redirects]]

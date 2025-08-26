@@ -1,115 +1,130 @@
-9:05:12 AM: Netlify Build                                                 
-9:05:12 AM: ────────────────────────────────────────────────────────────────
-9:05:12 AM: ​
-9:05:12 AM: ❯ Version
-9:05:12 AM:   @netlify/build 35.1.2
-9:05:12 AM: ​
-9:05:12 AM: ❯ Flags
-9:05:12 AM:   accountId: 682944c53ccbcbdd9854f222
-9:05:12 AM:   baseRelDir: true
-9:05:12 AM:   buildId: 68ad2b4c50ceebf8ada4bd48
-9:05:12 AM:   deployId: 68ad2b4c50ceebf8ada4bd4a
-9:05:12 AM: ​
-9:05:12 AM: ❯ Current directory
-9:05:12 AM:   /opt/build/repo
-9:05:12 AM: ​
-9:05:12 AM: ❯ Config file
-9:05:12 AM:   /opt/build/repo/netlify.toml
-9:05:12 AM: ​
-9:05:12 AM: ❯ Context
-9:05:12 AM:   production
-9:05:13 AM: ​
-9:05:13 AM: ❯ Installing extensions
-9:05:13 AM:    - neon
-9:05:34 AM: ​
-9:05:34 AM: ❯ Using Next.js Runtime - v5.12.1
-9:05:34 AM: ​
-9:05:34 AM: ❯ Loading extensions
-9:05:34 AM:    - neon
-9:05:36 AM: No Next.js cache to restore
-9:05:36 AM: ​
-9:05:36 AM: build.command from netlify.toml                               
-9:05:36 AM: ────────────────────────────────────────────────────────────────
-9:05:36 AM: ​
-9:05:36 AM: $ npm install --legacy-peer-deps && npm run build
-9:05:36 AM: > my-v0-project@0.1.0 postinstall
-9:05:36 AM: > echo 'Dependencies installed successfully'
-9:05:36 AM: Dependencies installed successfully
-9:05:36 AM: up to date in 739ms
-9:05:36 AM: > my-v0-project@0.1.0 build
-9:05:36 AM: > next build
-9:05:37 AM: ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
-9:05:37 AM:   ▲ Next.js 14.2.16
-9:05:37 AM:   - Experiments (use with caution):
-9:05:37 AM:     · esmExternals
-9:05:37 AM:    Creating an optimized production build ...
-9:05:51 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
-9:05:50 AM: Failed to compile.
-9:05:50 AM: 
-9:05:50 AM: ./node_modules/next/dist/pages/_app.js
-9:05:50 AM: Module not found: Can't resolve 'null-loader'
-9:05:50 AM: https://nextjs.org/docs/messages/module-not-found
-9:05:50 AM: ./node_modules/next/dist/shared/lib/utils.js
-9:05:50 AM: Module not found: Can't resolve 'null-loader'
-9:05:50 AM: https://nextjs.org/docs/messages/module-not-found
-9:05:50 AM: Import trace for requested module:
-9:05:50 AM: ./node_modules/next/dist/pages/_app.js
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/cookies.js
-9:05:50 AM: Module not found: Can't resolve 'null-loader'
-9:05:50 AM: https://nextjs.org/docs/messages/module-not-found
-9:05:50 AM: Import trace for requested module:
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/index.js
-9:05:50 AM: ./lib/supabase-browser.ts
-9:05:50 AM: ./contexts/auth-context.tsx
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/createServerClient.js
-9:05:50 AM: Module not found: Can't resolve 'null-loader'
-9:05:50 AM: https://nextjs.org/docs/messages/module-not-found
-9:05:50 AM: Import trace for requested module:
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/index.js
-9:05:50 AM: ./lib/supabase-browser.ts
-9:05:50 AM: ./contexts/auth-context.tsx
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/utils/chunker.js
-9:05:50 AM: Module not found: Can't resolve 'null-loader'
-9:05:50 AM: https://nextjs.org/docs/messages/module-not-found
-9:05:50 AM: Import trace for requested module:
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/utils/index.js
-9:05:50 AM: ./node_modules/@supabase/ssr/dist/module/index.js
-9:05:50 AM: ./lib/supabase-browser.ts
-9:05:50 AM: ./contexts/auth-context.tsx
-9:05:50 AM: > Build failed because of webpack errors
-9:05:50 AM: ​
-9:05:50 AM: "build.command" failed                                        
-9:05:50 AM: ────────────────────────────────────────────────────────────────
-9:05:50 AM: ​
-9:05:50 AM:   Error message
-9:05:50 AM:   Command failed with exit code 1: npm install --legacy-peer-deps && npm run build (https://ntl.fyi/exit-code-1)
-9:05:50 AM: ​
-9:05:50 AM:   Error location
-9:05:50 AM:   In build.command from netlify.toml:
-9:05:50 AM:   npm install --legacy-peer-deps && npm run build
-9:05:50 AM: ​
-9:05:50 AM:   Resolved config
-9:05:50 AM:   build:
-9:05:50 AM:     command: npm install --legacy-peer-deps && npm run build
-9:05:50 AM:     commandOrigin: config
-9:05:50 AM:     environment:
-9:05:50 AM:       - NEXT_PUBLIC_SUPABASE_ANON_KEY
-9:05:50 AM:       - NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
-9:05:50 AM:       - NEXT_PUBLIC_SUPABASE_URL
-9:05:50 AM:       - SUPABASE_SERVICE_ROLE_KEY
-9:05:50 AM:       - NODE_VERSION
-9:05:50 AM:       - NPM_FLAGS
-9:05:50 AM:       - NPM_CONFIG_PACKAGE_MANAGER
-9:05:50 AM:       - NEXT_PRIVATE_STANDALONE
-9:05:50 AM:       - NETLIFY_NEXT_PLUGIN_SKIP
-9:05:50 AM:       - NEXT_TELEMETRY_DISABLED
-9:05:50 AM:       - NODE_OPTIONS
-9:05:50 AM:     ignore: git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/
-9:05:50 AM:     publish: /opt/build/repo/.next
-9:05:50 AM:     publishOrigin: config
-9:05:50 AM:   headers:
-9:05:51 AM:     - for: /*
+9:42:37 AM: Netlify Build                                                 
+9:42:37 AM: ────────────────────────────────────────────────────────────────
+9:42:37 AM: ​
+9:42:37 AM: ❯ Version
+9:42:37 AM:   @netlify/build 35.1.2
+9:42:37 AM: ​
+9:42:37 AM: ❯ Flags
+9:42:37 AM:   accountId: 682944c53ccbcbdd9854f222
+9:42:37 AM:   baseRelDir: true
+9:42:37 AM:   buildId: 68ad33fcf6feef0d4d379373
+9:42:37 AM:   deployId: 68ad33fcf6feef0d4d379375
+9:42:37 AM: ​
+9:42:37 AM: ❯ Current directory
+9:42:37 AM:   /opt/build/repo
+9:42:37 AM: ​
+9:42:37 AM: ❯ Config file
+9:42:37 AM:   /opt/build/repo/netlify.toml
+9:42:37 AM: ​
+9:42:37 AM: ❯ Context
+9:42:37 AM:   production
+9:42:38 AM: ​
+9:42:38 AM: ❯ Installing extensions
+9:42:38 AM:    - neon
+9:43:06 AM: ​
+9:43:06 AM: ❯ Using Next.js Runtime - v5.12.1
+9:43:06 AM: ​
+9:43:06 AM: ❯ Loading extensions
+9:43:06 AM:    - neon
+9:43:07 AM: No Next.js cache to restore
+9:43:07 AM: ​
+9:43:07 AM: build.command from netlify.toml                               
+9:43:07 AM: ────────────────────────────────────────────────────────────────
+9:43:07 AM: ​
+9:43:07 AM: $ npm install --legacy-peer-deps && npm run build
+9:43:07 AM: npm warn EBADENGINE Unsupported engine {
+9:43:07 AM: npm warn EBADENGINE   package: 'cross-env@10.0.0',
+9:43:07 AM: npm warn EBADENGINE   required: { node: '>=20' },
+9:43:07 AM: npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+9:43:07 AM: npm warn EBADENGINE }
+9:43:07 AM: npm warn EBADENGINE Unsupported engine {
+9:43:07 AM: npm warn EBADENGINE   package: 'vite@7.1.1',
+9:43:07 AM: npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+9:43:07 AM: npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+9:43:07 AM: npm warn EBADENGINE }
+9:43:08 AM: > my-v0-project@0.1.0 postinstall
+9:43:08 AM: > echo 'Dependencies installed successfully'
+9:43:08 AM: Dependencies installed successfully
+9:43:08 AM: up to date in 1s
+9:43:08 AM: > my-v0-project@0.1.0 build
+9:43:08 AM: > cross-env NEXT_RUNTIME=nodejs next build
+9:43:09 AM: ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+9:43:09 AM:   ▲ Next.js 14.2.16
+9:43:09 AM:   - Experiments (use with caution):
+9:43:09 AM:     · esmExternals
+9:43:09 AM:     · forceSwcTransforms
+9:43:09 AM:    Creating an optimized production build ...
+9:43:48 AM: [BABEL] Note: The code generator has deoptimised the styling of /opt/build/repo/node_modules/@splinetool/runtime/build/runtime.js as it exceeds the max of 500KB.
+9:43:57 AM: [BABEL] Note: The code generator has deoptimised the styling of /opt/build/repo/node_modules/@splinetool/runtime/build/runtime.js as it exceeds the max of 500KB.
+9:44:08 AM: [BABEL] Note: The code generator has deoptimised the styling of /opt/build/repo/node_modules/@splinetool/runtime/build/physics.js as it exceeds the max of 500KB.
+9:44:08 AM: [BABEL] Note: The code generator has deoptimised the styling of /opt/build/repo/node_modules/@splinetool/runtime/build/physics.js as it exceeds the max of 500KB.
+9:44:26 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+9:44:19 AM:  ✓ Compiled successfully
+9:44:19 AM:    Skipping validation of types
+9:44:19 AM:    Skipping linting
+9:44:20 AM:    Collecting page data ...
+9:44:24 AM: Error [ERR_REQUIRE_ESM]: require() of ES Module /opt/build/repo/node_modules/next/dist/compiled/@babel/runtime/helpers/esm/defineProperty.js from /opt/build/repo/.next/server/app/api/case-match/upload/route.js not supported.
+9:44:24 AM: Instead change the require of defineProperty.js in /opt/build/repo/.next/server/app/api/case-match/upload/route.js to a dynamic import() which is available in all CommonJS modules.
+9:44:24 AM:     at mod.require (/opt/build/repo/node_modules/next/dist/server/require-hook.js:65:28)
+9:44:24 AM:     at 6382 (/opt/build/repo/.next/server/app/api/case-match/upload/route.js:1:858)
+9:44:24 AM:     at t (/opt/build/repo/.next/server/webpack-runtime.js:1:127)
+9:44:24 AM:     at 5721 (/opt/build/repo/.next/server/app/api/case-match/upload/route.js:1:5012)
+9:44:24 AM:     at t (/opt/build/repo/.next/server/webpack-runtime.js:1:127)
+9:44:24 AM:     at 791 (/opt/build/repo/.next/server/app/api/case-match/upload/route.js:1:3030)
+9:44:24 AM:     at t (/opt/build/repo/.next/server/webpack-runtime.js:1:127)
+9:44:24 AM:     at /opt/build/repo/.next/server/app/api/case-match/upload/route.js:1:151323
+9:44:24 AM:     at Object.<anonymous> (/opt/build/repo/.next/server/app/api/case-match/upload/route.js:1:151352)
+9:44:24 AM:     at mod.require (/opt/build/repo/node_modules/next/dist/server/require-hook.js:65:28)
+9:44:24 AM:     at requirePage (/opt/build/repo/node_modules/next/dist/server/require.js:109:84)
+9:44:24 AM:     at /opt/build/repo/node_modules/next/dist/server/load-components.js:98:84
+9:44:24 AM:     at async loadComponentsImpl (/opt/build/repo/node_modules/next/dist/server/load-components.js:98:26)
+9:44:24 AM:     at async /opt/build/repo/node_modules/next/dist/build/utils.js:1116:32
+9:44:24 AM:     at async Span.traceAsyncFn (/opt/build/repo/node_modules/next/dist/trace/trace.js:154:20) {
+9:44:24 AM:   code: 'ERR_REQUIRE_ESM'
+9:44:24 AM: }
+9:44:24 AM: > Build error occurred
+9:44:24 AM: Error: Failed to collect page data for /api/case-match/upload
+9:44:24 AM:     at /opt/build/repo/node_modules/next/dist/build/utils.js:1268:15
+9:44:24 AM:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+9:44:24 AM:   type: 'Error'
+9:44:24 AM: }
+9:44:26 AM: ​
+9:44:26 AM: "build.command" failed                                        
+9:44:26 AM: ────────────────────────────────────────────────────────────────
+9:44:26 AM: ​
+9:44:26 AM:   Error message
+9:44:26 AM:   Command failed with exit code 1: npm install --legacy-peer-deps && npm run build (https://ntl.fyi/exit-code-1)
+9:44:26 AM: ​
+9:44:26 AM:   Error location
+9:44:26 AM:   In build.command from netlify.toml:
+9:44:26 AM:   npm install --legacy-peer-deps && npm run build
+9:44:26 AM: ​
+9:44:26 AM:   Resolved config
+9:44:26 AM:   build:
+9:44:26 AM:     command: npm install --legacy-peer-deps && npm run build
+9:44:26 AM:     commandOrigin: config
+9:44:26 AM:     environment:
+9:44:26 AM:       - NEXT_PUBLIC_SUPABASE_ANON_KEY
+9:44:26 AM:       - NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+9:44:26 AM:       - NEXT_PUBLIC_SUPABASE_URL
+9:44:26 AM:       - SUPABASE_SERVICE_ROLE_KEY
+9:44:26 AM:       - NODE_VERSION
+9:44:26 AM:       - NPM_FLAGS
+9:44:26 AM:       - NPM_CONFIG_PACKAGE_MANAGER
+9:44:26 AM:       - NEXT_PRIVATE_STANDALONE
+9:44:26 AM:       - NETLIFY_NEXT_PLUGIN_SKIP
+9:44:26 AM:       - NEXT_TELEMETRY_DISABLED
+9:44:26 AM:       - NODE_OPTIONS
+9:44:26 AM:       - NEXT_RUNTIME
+9:44:26 AM:       - NEXT_DISABLE_EDGE_RUNTIME
+9:44:26 AM:       - NEXT_FORCE_NODEJS_RUNTIME
+9:44:26 AM:       - NEXT_EXPERIMENTAL_EDGE
+9:44:26 AM:       - NEXT_EXPERIMENTAL_MIDDLEWARE
+9:44:26 AM:     ignore: git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/
+9:44:26 AM:     publish: /opt/build/repo/.next
+9:44:26 AM:     publishOrigin: config
+9:44:26 AM:   headers:
+9:44:26 AM:     - for: /*
       values:
         Permissions-Policy: camera=(), microphone=(), geolocation=()
         Referrer-Policy: strict-origin-when-cross-origin
@@ -143,6 +158,6 @@
       status: 200
       to: /.netlify/functions/:splat
   redirectsOrigin: config
-9:05:51 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
-9:05:51 AM: Failing build: Failed to build site
-9:05:51 AM: Finished processing build request in 1m12.256s
+9:44:26 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+9:44:26 AM: Failing build: Failed to build site
+9:44:30 AM: Finished processing build request in 2m16.455s

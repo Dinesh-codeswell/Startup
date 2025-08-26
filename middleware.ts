@@ -121,16 +121,25 @@ function createUnauthorizedResponse(request: NextRequest, userEmail?: string): N
 /**
  * Simplified middleware function to avoid build issues
  */
-export async function middleware(request: NextRequest) {
-  // Temporarily disable all middleware functionality to fix build issues
-  // This allows the website to function while we resolve the underlying problems
-  return NextResponse.next()
-}
+// export async function middleware(request: NextRequest) {
+//   // Temporarily disable all middleware functionality to fix build issues
+//   // This allows the website to function while we resolve the underlying problems
+//   return NextResponse.next()
+// }
 
 /**
  * Configure which routes the middleware should run on
  * Temporarily disabled to fix build issues
  */
-export const config = {
-  matcher: []
-}
+// export const config = {
+//   matcher: [
+//     /*
+//      * Match all request paths except for the ones starting with:
+//      * - api (API routes)
+//      * - _next/static (static files)
+//      * - _next/image (image optimization files)
+//      * - favicon.ico (favicon file)
+//      */
+//     '/((?!api|_next/static|_next/image|favicon.ico).*)',
+//   ],
+// }

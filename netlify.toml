@@ -4,12 +4,12 @@
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
   NPM_CONFIG_PACKAGE_MANAGER = "npm"
   NEXT_PRIVATE_STANDALONE = "true"
   # Force Node.js runtime completely
-  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
   # Optimize build performance
   NEXT_TELEMETRY_DISABLED = "1"
   # Handle Edge Runtime issues
@@ -21,6 +21,20 @@
   # Disable experimental features that might trigger Edge Runtime
   NEXT_EXPERIMENTAL_EDGE = "false"
   NEXT_EXPERIMENTAL_MIDDLEWARE = "false"
+  # Force legacy build mode
+  NEXT_PRIVATE_LOCAL_WEBPACK = "true"
+
+# Disable Edge Runtime for all functions
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  
+  [plugins.inputs]
+    # Force Node.js runtime
+    runtime = "nodejs18.x"
+    # Disable Edge Runtime
+    edge = false
+    # Disable experimental features
+    experimental = false
 
 # Handle redirects for Next.js app
 [[redirects]]

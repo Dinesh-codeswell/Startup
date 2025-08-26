@@ -4,7 +4,7 @@
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF backend/ Frontend/"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
   NPM_CONFIG_PACKAGE_MANAGER = "npm"
   NEXT_PRIVATE_STANDALONE = "true"

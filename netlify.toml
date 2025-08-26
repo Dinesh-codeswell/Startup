@@ -27,14 +27,6 @@
 # Disable Edge Runtime for all functions
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  
-  [plugins.inputs]
-    # Force Node.js runtime
-    runtime = "nodejs18.x"
-    # Disable Edge Runtime
-    edge = false
-    # Disable experimental features
-    experimental = false
 
 # Handle redirects for Next.js app
 [[redirects]]

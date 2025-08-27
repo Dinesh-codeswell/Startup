@@ -10,64 +10,155 @@ interface TasksScreenProps {
   onRouteChange: (route: string) => void
 }
 
+interface Task {
+  id: string
+  title: string
+  description: string
+  assignees: string[]
+  status: string
+  priority: string
+  dueDate: string
+}
+
+interface TeamMember {
+  id: string
+  name: string
+  avatar: string
+  email?: string
+}
+
 export default function TasksScreen({ teamData, currentUser, onRouteChange }: TasksScreenProps) {
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false)
   const [showEditTaskModal, setShowEditTaskModal] = useState(false)
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
   const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false)
-  const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null)
-  const [selectedTask, setSelectedTask] = useState(null)
-  const [editingTask, setEditingTask] = useState(null)
-  const [taskToDelete, setTaskToDelete] = useState(null)
+  const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     priority: "Medium",
     dueDate: "",
-    assignees: [],
+    assignees: [] as string[],
   })
 
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: "Market Research Analysis",
-      description:
-        "Conduct comprehensive market research to analyze current trends, competitor strategies, and identify potential opportunities for our upcoming product launch.",
-      assignees: ["Marcus Johnson", "David Kim"],
-      status: "In Progress",
-      priority: "High",
-      dueDate: "12/20/2024",
-    },
-    {
-      id: 2,
-      title: "Design Mockups",
-      description:
-        "Create detailed design mockups for the new user interface, including wireframes, color schemes, and interactive prototypes for user testing.",
-      assignees: ["Elena Rodriguez"],
-      status: "Pending",
-      priority: "Medium",
-      dueDate: "12/18/2024",
-    },
-    {
-      id: 3,
-      title: "Strategy Presentation",
-      description:
-        "Prepare and deliver a comprehensive strategy presentation to stakeholders outlining our Q1 objectives and implementation roadmap.",
-      assignees: ["Sarah Chen"],
-      status: "Not Started",
-      priority: "High",
-      dueDate: "12/25/2024",
-    },
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const teamMembers = [
-    { id: 1, name: "Sarah Chen", avatar: "/placeholder.svg?height=32&width=32" },
-    { id: 2, name: "Marcus Johnson", avatar: "/placeholder.svg?height=32&width=32" },
-    { id: 3, name: "Elena Rodriguez", avatar: "/placeholder.svg?height=32&width=32" },
-    { id: 4, name: "David Kim", avatar: "/placeholder.svg?height=32&width=32" },
-  ]
+  // Transform team data to get team members
+  const teamMembers: TeamMember[] = teamData?.members?.map((member: any) => ({
+    id: member.submission?.user_id || member.user_id,
+    name: member.submission?.full_name || `${member.submission?.first_name || ''} ${member.submission?.last_name || ''}`.trim() || member.submission?.email || 'Unknown',
+    avatar: "/placeholder.svg?height=32&width=32",
+    email: member.submission?.email
+  })) || []
 
-  const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+
+  // API Functions
+  const fetchTasks = async () => {
+    if (!teamData?.team?.id && !teamData?.id) return
+    
+    try {
+      setLoading(true)
+      const teamId = teamData?.team?.id || teamData?.id
+      const response = await fetch(`/api/tasks/${teamId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks')
+      }
+      
+      const data = await response.json()
+      setTasks(data.tasks || [])
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching tasks:', err)
+      setError('Failed to load tasks')
+      setTasks([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createTaskAPI = async (taskData) => {
+    try {
+      const teamId = teamData?.team?.id || teamData?.id
+      const response = await fetch(`/api/tasks/${teamId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...taskData,
+          createdBy: currentUser?.id
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to create task')
+      }
+      
+      const data = await response.json()
+      return data.task
+    } catch (err) {
+      console.error('Error creating task:', err)
+      throw err
+    }
+  }
+
+  const updateTaskAPI = async (taskId, taskData) => {
+    try {
+      const response = await fetch(`/api/tasks/task/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...taskData,
+          updatedBy: currentUser?.id
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update task')
+      }
+      
+      const data = await response.json()
+      return data.task
+    } catch (err) {
+      console.error('Error updating task:', err)
+      throw err
+    }
+  }
+
+  const deleteTaskAPI = async (taskId) => {
+    try {
+      const response = await fetch(`/api/tasks/task/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete task')
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err)
+      throw err
+    }
+  }
+
+  // Load tasks on component mount and when teamData changes
+  useEffect(() => {
+    fetchTasks()
+  }, [teamData])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,7 +180,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     setShowCreateTaskModal(true)
   }
 
-  const handleAssigneeToggle = (memberId: number) => {
+  const handleAssigneeToggle = (memberId: string) => {
     setNewTask((prev) => ({
       ...prev,
       assignees: prev.assignees.includes(memberId)
@@ -98,40 +189,46 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     }))
   }
 
-  const handleSubmitTask = (e: React.FormEvent) => {
+  const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newTask.title.trim()) {
-      const assigneeNames = newTask.assignees
-        .map((id) => teamMembers.find((member) => member.id === id)?.name)
-        .filter(Boolean)
+      try {
+        const taskData = {
+          title: newTask.title,
+          description: newTask.description,
+          priority: newTask.priority,
+          dueDate: newTask.dueDate || null,
+          assignees: newTask.assignees
+        }
 
-      const newTaskItem = {
-        id: tasks.length + 1,
-        title: newTask.title,
-        description: newTask.description,
-        assignees: assigneeNames,
-        status: "Not Started",
-        priority: newTask.priority,
-        dueDate: newTask.dueDate || "No due date",
+        const createdTask = await createTaskAPI(taskData)
+        setTasks((prev) => [createdTask, ...prev])
+        
+        setShowCreateTaskModal(false)
+        setNewTask({
+          title: "",
+          description: "",
+          priority: "Medium",
+          dueDate: "",
+          assignees: [],
+        })
+      } catch (err) {
+        console.error('Failed to create task:', err)
+        // You could add a toast notification here
       }
-
-      setTasks((prev) => [...prev, newTaskItem])
     }
-
-    setShowCreateTaskModal(false)
-    setNewTask({
-      title: "",
-      description: "",
-      priority: "Medium",
-      dueDate: "",
-      assignees: [],
-    })
   }
 
-  const handleStatusChange = (taskId: number, newStatus: string) => {
-    console.log("[v0] Updating task", taskId, "to status", newStatus) // Add debug logging
-    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
-    setOpenStatusDropdown(null)
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      console.log("Updating task", taskId, "to status", newStatus)
+      const updatedTask = await updateTaskAPI(taskId, { status: newStatus })
+      setTasks((prev) => prev.map((task) => (task.id === taskId ? updatedTask : task)))
+      setOpenStatusDropdown(null)
+    } catch (err) {
+      console.error('Failed to update task status:', err)
+      // You could add a toast notification here
+    }
   }
 
   const handleViewTaskDetails = (task) => {
@@ -143,8 +240,8 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     setEditingTask({
       ...task,
       assignees: task.assignees
-        .map((name) => teamMembers.find((member) => member.name === name)?.id || 0)
-        .filter((id) => id !== 0),
+        .map((name) => teamMembers.find((member) => member.name === name)?.id || "")
+        .filter((id) => id !== ""),
     })
     setShowEditTaskModal(true)
   }
@@ -154,42 +251,47 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     setShowDeleteConfirmModal(true)
   }
 
-  const handleUpdateTask = (e: React.FormEvent) => {
+  const handleUpdateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (editingTask && editingTask.title.trim()) {
-      const assigneeNames = editingTask.assignees
-        .map((id) => teamMembers.find((member) => member.id === id)?.name)
-        .filter(Boolean)
+      try {
+        const taskData = {
+          title: editingTask.title,
+          description: editingTask.description,
+          priority: editingTask.priority,
+          dueDate: editingTask.dueDate || null,
+          assignees: editingTask.assignees
+        }
 
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === editingTask.id
-            ? {
-                ...task,
-                title: editingTask.title,
-                description: editingTask.description,
-                assignees: assigneeNames,
-                priority: editingTask.priority,
-                dueDate: editingTask.dueDate,
-              }
-            : task,
-        ),
-      )
+        const updatedTask = await updateTaskAPI(editingTask.id, taskData)
+        setTasks((prev) =>
+          prev.map((task) => (task.id === editingTask.id ? updatedTask : task))
+        )
+        
+        setShowEditTaskModal(false)
+        setEditingTask(null)
+      } catch (err) {
+        console.error('Failed to update task:', err)
+        // You could add a toast notification here
+      }
     }
-
-    setShowEditTaskModal(false)
-    setEditingTask(null)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (taskToDelete) {
-      setTasks((prev) => prev.filter((task) => task.id !== taskToDelete.id))
+      try {
+        await deleteTaskAPI(taskToDelete.id)
+        setTasks((prev) => prev.filter((task) => task.id !== taskToDelete.id))
+        setShowDeleteConfirmModal(false)
+        setTaskToDelete(null)
+      } catch (err) {
+        console.error('Failed to delete task:', err)
+        // You could add a toast notification here
+      }
     }
-    setShowDeleteConfirmModal(false)
-    setTaskToDelete(null)
   }
 
-  const handleEditAssigneeToggle = (memberId: number) => {
+  const handleEditAssigneeToggle = (memberId: string) => {
     setEditingTask((prev) => ({
       ...prev,
       assignees: prev.assignees.includes(memberId)
@@ -245,7 +347,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     }
   }
 
-  const toggleStatusDropdown = (taskId: number, event: React.MouseEvent) => {
+  const toggleStatusDropdown = (taskId: string, event: React.MouseEvent) => {
     event.stopPropagation()
     setOpenStatusDropdown(openStatusDropdown === taskId ? null : taskId)
   }

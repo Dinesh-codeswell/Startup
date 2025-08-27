@@ -32,16 +32,36 @@ const Header = () => {
     { name: "About", href: "/about" },
   ]
 
-  // Handle Find a Team click with authentication flow
-  const handleFindTeamClick = useCallback((e: React.MouseEvent) => {
+  // Handle Find a Team click with enhanced workflow logic
+  const handleFindTeamClick = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault()
     
     if (!auth?.user) {
       // Redirect to login with return URL
       window.location.href = '/login?returnTo=' + encodeURIComponent('/team')
     } else {
-      // User is signed in, go to team page (which will show questionnaire)
-      window.location.href = '/team'
+      // User is signed in, check their status to determine redirect
+      try {
+        const response = await fetch(`/api/team-matching/user-status?user_id=${auth.user.id}`)
+        const data = await response.json()
+        
+        if (data.success) {
+          // If user has submitted questionnaire (with or without team), go to team dashboard
+          if (data.data.hasSubmitted) {
+            window.location.href = '/team/dashboard'
+          } else {
+            // If user hasn't submitted, go to team page (shows questionnaire)
+            window.location.href = '/team'
+          }
+        } else {
+          // Fallback: go to team page
+          window.location.href = '/team'
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error)
+        // Fallback: go to team page
+        window.location.href = '/team'
+      }
     }
   }, [auth?.user])
 
@@ -105,7 +125,7 @@ const Header = () => {
     )
   }
 
-  const { user, profile, loading, signOut } = auth // Destructure from the context value
+  const { user, profile, signOut } = auth // Destructure from the context value
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -163,12 +183,7 @@ const Header = () => {
 
           {/* Desktop Auth Section */}
           <div className="hidden lg:flex items-center space-x-3 flex-shrink-0 relative">
-            {loading ? (
-              <div className="flex items-center space-x-3">
-                <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
-                <div className="w-24 h-8 bg-gray-200 animate-pulse rounded"></div>
-              </div>
-            ) : user ? (
+            {user ? (
               <div className="relative">
                 <Button
                   variant="outline"
@@ -302,12 +317,7 @@ const Header = () => {
               Find a Team
             </button>
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-              {loading ? (
-                <div className="flex flex-col space-y-3">
-                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
-                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
-                </div>
-              ) : user ? (
+              {user ? (
                 <>
                   <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button

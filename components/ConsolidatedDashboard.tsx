@@ -12,13 +12,15 @@ interface ConsolidatedDashboardProps {
 }
 
 interface AvatarProps {
-  name: string
+  name?: string | null
   src?: string
   size?: "sm" | "md" | "lg"
   className?: string
 }
 
 function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
+  // Handle undefined/null name gracefully
+  const safeName = name || "User"
   const [imgFailed, setImgFailed] = useState(false)
 
   const hasValidSrc = useMemo(() => {
@@ -33,7 +35,7 @@ function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
 
   const initials = useMemo(() => {
     const i =
-      name
+      safeName
         .trim()
         .split(/\s+/)
         .map((w) => w[0] || "")
@@ -41,7 +43,7 @@ function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
         .slice(0, 2)
         .toUpperCase() || "?"
     return i
-  }, [name])
+  }, [safeName])
 
   const sizeClasses: Record<NonNullable<AvatarProps["size"]>, string> = {
     sm: "w-8 h-8 text-xs",
@@ -69,15 +71,15 @@ function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
   ]
 
   const colorClass = useMemo(() => {
-    const hash = Array.from(name || "").reduce((a, c) => a + c.charCodeAt(0), 0)
+    const hash = Array.from(safeName || "").reduce((a, c) => a + c.charCodeAt(0), 0)
     return palette[hash % palette.length]
-  }, [name])
+  }, [safeName])
 
   return (
     <div
       className={`${sizeClasses[size]} ${colorClass} text-white rounded-full flex items-center justify-center font-medium overflow-hidden flex-shrink-0 ${className}`}
-      aria-label={name}
-      title={name}
+      aria-label={safeName}
+      title={safeName}
     >
       {showInitials ? (
         <span className="select-none">{initials}</span>
@@ -85,7 +87,7 @@ function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
         <img
           key={src}
           src={src || "/placeholder.svg"}
-          alt={name}
+          alt={safeName}
           className="w-full h-full object-cover"
           onError={() => setImgFailed(true)}
           draggable={false}
@@ -101,6 +103,31 @@ export default function ConsolidatedDashboard({
   onRouteChange,
   currentTasks = [],
 }: ConsolidatedDashboardProps) {
+  // Show loading state if user authentication is still being determined
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-32"></div>
+          </div>
+        </div>
+        <div className="p-4 lg:p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
   // Active section state
   const [activeSection, setActiveSection] = useState("dashboard")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)

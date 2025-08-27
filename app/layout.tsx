@@ -4,7 +4,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { AdminProvider } from "@/contexts/admin-context"
-import { OAuthHandler } from "@/components/OAuthHandler"
 import { AuthStateHandler } from "@/components/AuthStateHandler"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
 import ErrorBoundary from "@/components/ErrorBoundary"
@@ -63,7 +62,6 @@ export default function RootLayout({
           <AuthProvider>
             <AdminProvider>
               <Suspense fallback={<LoadingFallback />}>
-                <OAuthHandler />
                 <AuthStateHandler />
                 {children}
               </Suspense>

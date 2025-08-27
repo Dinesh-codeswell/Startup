@@ -6,7 +6,7 @@ import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
 import { ensureUserProfile } from "@/lib/profile-utils"
-import { useSessionSync, broadcastSessionEvent, forceImmediateSessionSync, getCurrentSessionState } from "@/lib/session-sync"
+import { useSessionSync, broadcastSessionEvent } from "@/lib/session-sync"
 import type { Profile } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   const refreshProfile = useCallback(async () => {
@@ -50,10 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   useEffect(() => {
-    // Get initial session with enhanced loading state management
+    // Get initial session with retry logic
     const getInitialSession = async () => {
       try {
-        setLoading(true)
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) {
           console.error('Error getting initial session:', error)
@@ -63,41 +61,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         console.log('Initial session loaded:', session?.user?.id)
+        setUser(session?.user ?? null)
         
-        // Set user state first
-        const newUser = session?.user ?? null
-        setUser(newUser)
-        
-        // Handle profile loading
-        if (newUser) {
-          try {
-            const profile = await getProfile(newUser.id)
-            setProfile(profile)
-          } catch (profileError) {
-            console.error('Error loading profile:', profileError)
-            setProfile(null)
-          }
-        } else {
-          setProfile(null)
+        if (session?.user) {
+          const profile = await getProfile(session.user.id)
+          setProfile(profile)
         }
-        
-        // Only set loading to false after everything is complete
         setLoading(false)
-        setInitialLoadComplete(true)
       } catch (error) {
         console.error('Error in getInitialSession:', error)
         setLoading(false)
-        setInitialLoadComplete(true)
       }
     }
 
     getInitialSession()
 
-    // Enhanced cross-tab synchronization using storage events
+    // Simplified cross-tab synchronization
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key?.startsWith('sb-') && e.key.includes('auth-token')) {
-        console.log('Auth token changed in another tab, refreshing session immediately')
-        // Force immediate session refresh when auth token changes
+        console.log('Auth token changed in another tab, refreshing session')
         getInitialSession()
       }
     }
@@ -107,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.addEventListener('storage', handleStorageChange)
     }
 
-    // Enhanced session sync for cross-tab communication
+    // Session sync for cross-tab communication
     const unsubscribeSessionSync = useSessionSync((event) => {
       console.log('Session sync event received:', event)
       
@@ -116,8 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null)
         setLoading(false)
       } else if (event === 'signin' || event === 'token_refresh') {
-        // Force immediate session refresh when signin/refresh detected
-        console.log('Forcing immediate session refresh due to sync event')
+        // Refresh session when signin/refresh detected in another tab
         getInitialSession()
       }
     })
@@ -128,48 +109,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change:", event, session?.user?.id)
 
-      // Only process auth changes after initial load is complete
-      if (!initialLoadComplete && event !== 'INITIAL_SESSION') {
-        return
-      }
+      // Update state immediately
+      setUser(session?.user ?? null)
 
-      // Set loading state for auth changes (but not initial load)
-      if (initialLoadComplete) {
-        setLoading(true)
-      }
-
-      // Update user state immediately
-      const newUser = session?.user ?? null
-      setUser(newUser)
-
-      if (newUser) {
+      if (session?.user) {
         // Broadcast signin to other tabs for new sessions
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           broadcastSessionEvent('signin')
-          // Force immediate sync across all tabs
-          forceImmediateSessionSync()
         }
         
-        // Handle auth events - refresh profile for all events
+        // Refresh profile
         try {
-          const profile = await getProfile(newUser.id)
+          const profile = await getProfile(session.user.id)
           setProfile(profile)
         } catch (error) {
           console.error('Error refreshing profile on auth change:', error)
-          setProfile(null)
         }
       } else {
         setProfile(null)
-        // Force immediate sync when user signs out
-        if (event === 'SIGNED_OUT') {
-          forceImmediateSessionSync()
-        }
       }
-      
-      // Only set loading to false after everything is processed
-      if (initialLoadComplete) {
-        setLoading(false)
-      }
+      setLoading(false)
     })
 
     // Note: Auth success handling is now managed by AuthStateHandler component

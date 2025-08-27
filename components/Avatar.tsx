@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react"
 
 interface AvatarProps {
-  name: string
+  name?: string | null
   src?: string
   size?: "sm" | "md" | "lg"
   className?: string
 }
 
 export default function Avatar({ name, src, size = "md", className = "" }: AvatarProps) {
+  // Handle undefined/null name gracefully
+  const safeName = name || "User"
   const [imgFailed, setImgFailed] = useState(false)
 
   // Treat empty/placeholder-like URLs as "no image"
@@ -26,7 +28,7 @@ export default function Avatar({ name, src, size = "md", className = "" }: Avata
 
   const initials = useMemo(() => {
     const i =
-      name
+      safeName
         .trim()
         .split(/\s+/)
         .map((w) => w[0] || "")
@@ -34,7 +36,7 @@ export default function Avatar({ name, src, size = "md", className = "" }: Avata
         .slice(0, 2)
         .toUpperCase() || "?"
     return i
-  }, [name])
+  }, [safeName])
 
   const sizeClasses: Record<NonNullable<AvatarProps["size"]>, string> = {
     sm: "w-8 h-8 text-xs",
@@ -63,15 +65,15 @@ export default function Avatar({ name, src, size = "md", className = "" }: Avata
   ]
 
   const colorClass = useMemo(() => {
-    const hash = Array.from(name || "").reduce((a, c) => a + c.charCodeAt(0), 0)
+    const hash = Array.from(safeName || "").reduce((a, c) => a + c.charCodeAt(0), 0)
     return palette[hash % palette.length]
-  }, [name])
+  }, [safeName])
 
   return (
     <div
       className={`${sizeClasses[size]} ${colorClass} text-white rounded-full flex items-center justify-center font-medium overflow-hidden flex-shrink-0 ${className}`}
-      aria-label={name}
-      title={name}
+      aria-label={safeName}
+      title={safeName}
     >
       {showInitials ? (
         <span className="select-none">{initials}</span>
@@ -79,7 +81,7 @@ export default function Avatar({ name, src, size = "md", className = "" }: Avata
         <img
           key={src} // ensure re-render if src changes
           src={src || "/placeholder.svg"}
-          alt={name}
+          alt={safeName}
           className="w-full h-full object-cover"
           onError={() => setImgFailed(true)}
           draggable={false}

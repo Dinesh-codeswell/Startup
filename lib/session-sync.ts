@@ -33,9 +33,6 @@ class SessionSync {
     this.isListening = true
     window.addEventListener('storage', this.handleStorageChange)
     window.addEventListener('focus', this.handleWindowFocus)
-    
-    // Check for session changes periodically
-    setInterval(this.checkSessionChanges, 5000)
   }
 
   /**
@@ -53,13 +50,6 @@ class SessionSync {
    * Handle storage changes from other tabs
    */
   private handleStorageChange = (event: StorageEvent) => {
-    // Handle force sync events
-    if (event.key === 'session-force-sync') {
-      console.log('Force sync event received')
-      this.checkSessionChanges()
-      return
-    }
-
     if (!event.key?.startsWith('sb-')) return
 
     console.log('Storage change detected:', event.key, event.newValue ? 'set' : 'removed')
@@ -103,7 +93,7 @@ class SessionSync {
       const currentHash = currentToken ? this.hashString(currentToken) : null
 
       if (currentHash !== this.lastTokenHash) {
-        console.log('Session change detected via periodic check')
+        console.log('Session change detected via focus check')
         this.lastTokenHash = currentHash
         
         if (currentHash) {
@@ -114,24 +104,6 @@ class SessionSync {
       }
     } catch (error) {
       console.error('Error checking session changes:', error)
-    }
-  }
-
-  /**
-   * Get current session state for immediate synchronization
-   */
-  getCurrentSessionState() {
-    if (typeof window === 'undefined') return null
-
-    try {
-      const authKeys = Object.keys(localStorage).filter(key => 
-        key.startsWith('sb-') && key.includes('auth-token')
-      )
-      
-      return authKeys.length > 0 ? localStorage.getItem(authKeys[0]) : null
-    } catch (error) {
-      console.error('Error getting current session state:', error)
-      return null
     }
   }
 
@@ -169,24 +141,6 @@ class SessionSync {
   }
 
   /**
-   * Force immediate session synchronization across all tabs
-   */
-  forceImmediateSync() {
-    // Trigger immediate check
-    this.checkSessionChanges()
-    
-    // Broadcast sync event to all tabs
-    if (typeof window !== 'undefined') {
-      const syncEvent = new StorageEvent('storage', {
-        key: 'session-force-sync',
-        newValue: Date.now().toString(),
-        storageArea: localStorage
-      })
-      window.dispatchEvent(syncEvent)
-    }
-  }
-
-  /**
    * Broadcast a session event to other tabs
    */
   broadcastSessionEvent(event: 'signin' | 'signout') {
@@ -215,14 +169,6 @@ export function useSessionSync(callback: SessionSyncCallback) {
 
 export function forceSessionSync() {
   sessionSync.forceSync()
-}
-
-export function forceImmediateSessionSync() {
-  sessionSync.forceImmediateSync()
-}
-
-export function getCurrentSessionState() {
-  return sessionSync.getCurrentSessionState()
 }
 
 export function broadcastSessionEvent(event: 'signin' | 'signout') {

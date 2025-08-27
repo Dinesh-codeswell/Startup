@@ -17,7 +17,7 @@ export default function SettingsScreen({
   setShowRequestPopup,
   setIsReportModalOpen,
 }: SettingsScreenProps) {
-  const [teamName, setTeamName] = useState("Innovation Squad Alpha")
+  const [teamName, setTeamName] = useState(teamData?.team?.name || teamData?.name || "Team Name")
   const [teamDescription, setTeamDescription] = useState("")
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -25,6 +25,38 @@ export default function SettingsScreen({
   const [reportMessage, setReportMessage] = useState("")
   const [showSuccessMessage, setShowSuccessMessage] = useState("")
   const [selectedMember, setSelectedMember] = useState<any>(null)
+  
+  // Show loading state if user authentication is still being determined
+  if (!currentUser) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handleRequestTeamChange = () => {
     setShowRequestModal(true)
@@ -55,68 +87,23 @@ export default function SettingsScreen({
     setTimeout(() => setShowSuccessMessage(""), 3000)
   }
 
-  const teamMembers = [
-    {
-      id: 1,
-      name: "Sarah Chen",
-      avatar: "/placeholder.svg?height=40&width=40",
-      university: "Stanford University",
-      role: "Team Lead",
-      isLead: true,
-      education: "Stanford University • Class of 2025",
-      experience: "3+ years in strategy consulting",
-      about:
-        "Experienced team leader with a background in strategic consulting and data-driven decision making. Has led multiple successful projects at Stanford.",
-      skills: ["Strategic Planning", "Team Leadership", "Data Analysis", "Project Management"],
-      benefit:
-        "Provides strategic direction and ensures data-driven decisions. Key for leading complex projects and maintaining team focus.",
-    },
-    {
-      id: 2,
-      name: "Marcus Johnson",
-      avatar: "/placeholder.svg?height=40&width=40",
-      university: "MIT",
-      role: "Researcher",
-      isLead: false,
-      education: "MIT • Class of 2024",
-      experience: "2+ years in market research",
-      about:
-        "Analytical researcher with expertise in market analysis and data interpretation. Strong background in quantitative methods.",
-      skills: ["Market Research", "Data Analytics", "Statistical Analysis", "Problem Solving"],
-      benefit:
-        "Brings deep analytical capabilities and research expertise. Essential for data-driven insights and market understanding.",
-    },
-    {
-      id: 3,
-      name: "Elena Rodriguez",
-      avatar: "/placeholder.svg?height=40&width=40",
-      university: "Harvard Business School",
-      role: "Designer",
-      isLead: false,
-      education: "Harvard Business School • Class of 2025",
-      experience: "3+ years in UX/UI design",
-      about:
-        "Creative designer with a strong business background. Specializes in user experience and visual design for business applications.",
-      skills: ["UX/UI Design", "Creative Thinking", "Prototyping", "User Research"],
-      benefit:
-        "Combines design expertise with business acumen. Critical for creating user-centered solutions and visual communication.",
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      avatar: "/placeholder.svg?height=40&width=40",
-      university: "UC Berkeley",
-      role: "Analyst",
-      isLead: false,
-      education: "UC Berkeley • Class of 2024",
-      experience: "2+ years in business analysis",
-      about:
-        "Detail-oriented analyst with strong quantitative skills. Focuses on business process optimization and financial modeling.",
-      skills: ["Business Analysis", "Financial Modeling", "Process Optimization", "Data Visualization"],
-      benefit:
-        "Provides analytical rigor and business process expertise. Key for optimizing operations and financial planning.",
-    },
-  ]
+  // Transform real team data to match the expected format
+  const teamMembers = teamData?.members ? teamData.members.map((member, index) => {
+    const submission = member.team_matching_submissions || member.submission || {}
+    return {
+      id: member.id || index + 1,
+      name: submission.full_name || member.name || 'Unknown Member',
+      avatar: member.avatarUrl || `/placeholder.svg?height=40&width=40&text=${(submission.full_name || member.name || 'U').charAt(0)}`,
+      university: submission.college_name || member.college || 'Unknown University',
+      role: member.role_in_team || (submission.preferred_roles && submission.preferred_roles[0]) || 'Member',
+      isLead: member.role_in_team === 'Team Lead' || member.isLeader || false,
+      education: `${submission.college_name || member.college || 'Unknown University'} • ${submission.current_year || member.year || 'Unknown Year'}`,
+      experience: submission.experience || member.experience || 'No experience listed',
+      about: submission.about || member.about || 'No description available',
+      skills: submission.core_strengths || member.strengths || [],
+      benefit: member.teamBenefit || 'Contributes valuable skills to the team',
+    }
+  }) : []
 
   return (
     <div className="bg-gray-50 min-h-screen">

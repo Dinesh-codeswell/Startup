@@ -288,15 +288,40 @@ const TeamDashboard = ({ userStatus }) => {
         
         if (userStatus?.hasTeam && userStatus?.team) {
           // User has a team - use real data
+          const transformedMembers = (userStatus.team.members || []).map((member, index) => {
+            const submission = member.submission
+            return {
+              id: submission?.id || member.submission_id,
+              name: submission?.full_name || 'Unknown Member',
+              avatarUrl: `https://images.unsplash.com/photo-${['1494790108755-2616b612b1c0', '1507003211169-0a1dd7228f2d', '1438761681033-6461ffad8d80', '1472099645785-5658abf4ff4e'][index % 4]}?w=100&h=100&fit=crop&crop=face`,
+              college: submission?.college_name || 'Unknown College',
+              year: submission?.current_year || 'Unknown Year',
+              role: member.role_in_team || 'Member',
+              strengths: submission?.core_strengths || [],
+              isLeader: index === 0, // First member is leader for now
+              profileUrl: `/profile/${submission?.id}`,
+              about: `Student from ${submission?.college_name || 'Unknown College'} with experience in ${submission?.experience || 'various areas'}.`,
+              experience: submission?.experience || 'Unknown',
+              teamBenefit: `Brings ${(submission?.core_strengths || []).join(', ')} skills to the team.`,
+              coreSkills: submission?.core_strengths || [],
+              email: submission?.email,
+              whatsappNumber: submission?.whatsapp_number,
+              availability: submission?.availability,
+              preferredRoles: submission?.preferred_roles || [],
+              casePreferences: submission?.case_preferences || []
+            }
+          })
+
           const realTeamData = {
             team: {
               id: userStatus.team.id,
-              name: userStatus.team.team_name,
+              name: userStatus.team.team_name || 'My Team',
               code: `TEAM-${userStatus.team.id.slice(-4)}`,
-              status: userStatus.team.status === 'active' ? 'Active' : 'Pending',
-              createdAt: userStatus.team.formed_at,
+              status: userStatus.team.approval_status === 'approved' ? 'Active' : 'Pending',
+              createdAt: userStatus.team.formed_at || userStatus.team.created_at,
+              compatibilityScore: userStatus.team.compatibility_score
             },
-            members: userStatus.team.members || [],
+            members: transformedMembers,
             insights: mockTeamData.insights, // Use mock insights for now
             unreadCounts: { chat: 0, tasks: 0 },
             tasks: [], // Empty tasks initially

@@ -248,6 +248,7 @@ export function TeamMatchingQuestionnaire({ onClose, onSubmitSuccess }: TeamMatc
         if (onSubmitSuccess) {
           onSubmitSuccess()
         } else {
+          // Default behavior: redirect to homepage after successful submission
           window.location.href = '/'
         }
       } else {

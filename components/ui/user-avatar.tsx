@@ -2,7 +2,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 
 interface UserAvatarProps {
-  name: string
+  name?: string | null
   size?: 'sm' | 'md' | 'lg' | 'xl'
   status?: 'online' | 'offline' | 'away' | 'busy'
   role?: string
@@ -42,7 +42,9 @@ export function UserAvatar({
   className,
   showStatus = true
 }: UserAvatarProps) {
-  const initials = name
+  // Handle undefined/null name gracefully
+  const safeName = name || "User"
+  const initials = safeName
     .split(' ')
     .map(n => n[0])
     .join('')
@@ -79,7 +81,7 @@ export function UserAvatar({
 
 interface AvatarStackProps {
   users: Array<{
-    name: string
+    name?: string | null
     role?: string
     status?: 'online' | 'offline' | 'away' | 'busy'
   }>

@@ -18,7 +18,7 @@ export default function TeamPage() {
   const [userStatus, setUserStatus] = useState(null)
   const [statusLoading, setStatusLoading] = useState(false)
 
-  // Check user status when authenticated and redirect immediately if needed
+  // Check user status when authenticated and redirect based on desired workflow
   useEffect(() => {
     async function checkUserStatus() {
       if (!authLoading && user) {
@@ -31,9 +31,15 @@ export default function TeamPage() {
           if (data.success) {
             setUserStatus(data.data)
             
-            // If user has already submitted questionnaire, redirect immediately to team dashboard
-            if (data.data.hasSubmitted) {
+            // If user has already submitted questionnaire AND has a team, redirect to team dashboard
+            if (data.data.hasSubmitted && data.data.hasTeam) {
               router.replace('/team/dashboard') // Use replace to avoid back button issues
+              return
+            }
+            
+            // If user has submitted but no team yet, also redirect to team dashboard (waiting state)
+            if (data.data.hasSubmitted && !data.data.hasTeam) {
+              router.replace('/team/dashboard')
               return
             }
             
@@ -62,8 +68,8 @@ export default function TeamPage() {
       <TeamMatchingQuestionnaireWrapper 
         onClose={() => setShowQuestionnaire(false)}
         onSubmitSuccess={() => {
-          // Redirect to team dashboard after successful submission
-          router.replace('/team/dashboard')
+          // Redirect to homepage after successful submission (desired workflow)
+          router.replace('/')
         }}
       />
     )

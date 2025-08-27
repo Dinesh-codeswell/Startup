@@ -14,6 +14,37 @@ export default function ChatScreen({ teamData, currentUser }: ChatScreenProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
+  
+  // Show loading state if user authentication is still being determined
+  if (!currentUser) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="flex-1 p-4">
+          <div className="animate-pulse space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-gray-200 p-4">
+          <div className="animate-pulse">
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const emojis = [
     "😀",

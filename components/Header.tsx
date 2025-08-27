@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { Menu, X, User, LogOut, ChevronDown, Users, UserCheck, Settings } from "lucide-react"
-import { useState, useEffect, useContext, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import Link from "next/link"
-import { AuthContext } from "@/contexts/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { useAdmin } from "@/contexts/admin-context"
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
 
 
-  const auth = useContext(AuthContext) // Use useContext directly
+  const auth = useAuth() // Use the useAuth hook for proper error handling
   const { isAdmin, isLoading: adminLoading } = useAdmin() // Get admin status
 
   const navItems = [
@@ -105,7 +105,7 @@ const Header = () => {
     )
   }
 
-  const { user, profile, signOut } = auth // Destructure from the context value
+  const { user, profile, loading, signOut } = auth // Destructure from the context value
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -163,7 +163,12 @@ const Header = () => {
 
           {/* Desktop Auth Section */}
           <div className="hidden lg:flex items-center space-x-3 flex-shrink-0 relative">
-            {user ? (
+            {loading ? (
+              <div className="flex items-center space-x-3">
+                <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+                <div className="w-24 h-8 bg-gray-200 animate-pulse rounded"></div>
+              </div>
+            ) : user ? (
               <div className="relative">
                 <Button
                   variant="outline"
@@ -297,7 +302,12 @@ const Header = () => {
               Find a Team
             </button>
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-              {user ? (
+              {loading ? (
+                <div className="flex flex-col space-y-3">
+                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
+                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
+                </div>
+              ) : user ? (
                 <>
                   <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button

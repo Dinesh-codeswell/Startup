@@ -431,9 +431,9 @@ export class TeamMatchingService {
       .eq('user_id', userId)
       .order('submitted_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle() // Use maybeSingle() instead of single() to handle no results gracefully
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error) {
       console.error('Error fetching user submission:', error)
       throw new Error(`Failed to fetch user submission: ${error.message}`)
     }

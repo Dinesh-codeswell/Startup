@@ -7,39 +7,75 @@ import { Target, Lightbulb, Users, Trophy, ArrowRight } from "lucide-react"
 import { Header } from "@/components/Header"
 import { Footer } from "@/components/Footer"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { TeamMatchingQuestionnaireWrapper } from "@/components/LazyComponents"
 
 export default function TeamPage() {
   const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
   const [showQuestionnaire, setShowQuestionnaire] = useState(false)
+  const [userStatus, setUserStatus] = useState(null)
+  const [statusLoading, setStatusLoading] = useState(false)
 
-  // Auto-redirect to questionnaire if user is signed in
+  // Check user status when authenticated and redirect immediately if needed
   useEffect(() => {
-    if (!authLoading && user) {
-      setShowQuestionnaire(true)
+    async function checkUserStatus() {
+      if (!authLoading && user) {
+        setStatusLoading(true)
+        try {
+          // Pass user ID as query parameter to the API
+          const response = await fetch(`/api/team-matching/user-status?user_id=${user.id}`)
+          const data = await response.json()
+          
+          if (data.success) {
+            setUserStatus(data.data)
+            
+            // If user has already submitted questionnaire, redirect immediately to team dashboard
+            if (data.data.hasSubmitted) {
+              router.replace('/team/dashboard') // Use replace to avoid back button issues
+              return
+            }
+            
+            // If user hasn't submitted, show questionnaire
+            setShowQuestionnaire(true)
+          } else {
+            console.error('Failed to check user status:', data.error)
+            // Fallback: show questionnaire
+            setShowQuestionnaire(true)
+          }
+        } catch (error) {
+          console.error('Error checking user status:', error)
+          // Fallback: show questionnaire
+          setShowQuestionnaire(true)
+        } finally {
+          setStatusLoading(false)
+        }
+      }
     }
-  }, [user, authLoading])
+    
+    checkUserStatus()
+  }, [user, authLoading, router])
 
   if (showQuestionnaire) {
     return (
       <TeamMatchingQuestionnaireWrapper 
         onClose={() => setShowQuestionnaire(false)}
         onSubmitSuccess={() => {
-          // Redirect to homepage after successful submission
-          window.location.href = '/'
+          // Redirect to team dashboard after successful submission
+          router.replace('/team/dashboard')
         }}
       />
     )
   }
 
   // Show loading state
-  if (authLoading) {
+  if (authLoading || statusLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{authLoading ? 'Loading...' : 'Checking status...'}</p>
         </div>
       </div>
     )
@@ -239,7 +275,7 @@ export default function TeamPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-gradient-to-r from-teal-600 to-blue-600 text-sky-700 bg-blue-600">
+      <section className="py-16 px-4 bg-gradient-to-r from-teal-600 to-blue-600">
         <div className="container mx-auto text-center max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Find Your Dream Team?</h2>
           <p className="text-teal-100 text-lg mb-8">

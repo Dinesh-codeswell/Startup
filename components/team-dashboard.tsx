@@ -259,7 +259,7 @@ const ROLE_PERMISSIONS = {
 }
 
 // Main Dashboard Component
-const TeamDashboard = () => {
+const TeamDashboard = ({ userStatus }) => {
   const [activeRoute, setActiveRoute] = useState("dashboard")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [teamData, setTeamData] = useState(null)
@@ -285,10 +285,30 @@ const TeamDashboard = () => {
     const loadTeamData = async () => {
       try {
         setLoading(true)
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        setTeamData(mockTeamData)
-        setUnreadCounts(mockTeamData.unreadCounts)
+        
+        if (userStatus?.hasTeam && userStatus?.team) {
+          // User has a team - use real data
+          const realTeamData = {
+            team: {
+              id: userStatus.team.id,
+              name: userStatus.team.team_name,
+              code: `TEAM-${userStatus.team.id.slice(-4)}`,
+              status: userStatus.team.status === 'active' ? 'Active' : 'Pending',
+              createdAt: userStatus.team.formed_at,
+            },
+            members: userStatus.team.members || [],
+            insights: mockTeamData.insights, // Use mock insights for now
+            unreadCounts: { chat: 0, tasks: 0 },
+            tasks: [], // Empty tasks initially
+            chatMessages: [], // Empty chat initially
+          }
+          setTeamData(realTeamData)
+          setUnreadCounts(realTeamData.unreadCounts)
+        } else {
+          // User doesn't have a team - set to null to show locked state
+          setTeamData(null)
+          setUnreadCounts({ chat: 0, tasks: 0 })
+        }
       } catch (err) {
         setError("Failed to load team data")
       } finally {
@@ -296,8 +316,10 @@ const TeamDashboard = () => {
       }
     }
 
-    loadTeamData()
-  }, [])
+    if (userStatus) {
+      loadTeamData()
+    }
+  }, [userStatus])
 
   // Simulate real-time updates
   useEffect(() => {
@@ -375,8 +397,71 @@ const TeamDashboard = () => {
     return <LoadingScreen />
   }
 
-  if (error || !teamData) {
+  if (error) {
     return <ErrorScreen error={error} />
+  }
+
+  // Show locked state when user has submitted questionnaire but no team assigned
+  if (!teamData && userStatus?.hasSubmitted && !userStatus?.hasTeam) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="text-xl text-gray-900 font-bold">
+              <h1 className="text-xl text-gray-900 font-bold">My Team</h1>
+            </div>
+          </div>
+        </header>
+
+        {/* Locked State Content */}
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="text-center max-w-md mx-auto px-6">
+            <div className="mb-6">
+              <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Team Assignment Pending</h2>
+              <p className="text-gray-600 mb-6">
+                Thank you for submitting your questionnaire! Our team matching algorithm is working to find the perfect teammates for you.
+              </p>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-3">What happens next?</h3>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p>Our algorithm analyzes your skills, preferences, and goals</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p>We match you with complementary teammates</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p>You'll receive a notification when your team is ready</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Estimated wait time:</strong> 24-48 hours
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                You'll receive an email notification once your team is formed.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error if no team data and user hasn't submitted
+  if (!teamData) {
+    return <ErrorScreen error="Unable to load team data" />
   }
 
   return (

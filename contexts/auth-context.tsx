@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
 import { ensureUserProfile } from "@/lib/profile-utils"
+import { useSessionSync, broadcastSessionEvent, forceImmediateSessionSync, getCurrentSessionState } from "@/lib/session-sync"
 import type { Profile } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   const refreshProfile = useCallback(async () => {
@@ -43,68 +45,143 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
+    // Broadcast signout to other tabs
+    broadcastSessionEvent('signout')
   }, [supabase])
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        getProfile(session.user.id).then(setProfile)
+    // Get initial session with enhanced loading state management
+    const getInitialSession = async () => {
+      try {
+        setLoading(true)
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+          console.error('Error getting initial session:', error)
+          // Retry after a short delay
+          setTimeout(() => getInitialSession(), 1000)
+          return
+        }
+        
+        console.log('Initial session loaded:', session?.user?.id)
+        
+        // Set user state first
+        const newUser = session?.user ?? null
+        setUser(newUser)
+        
+        // Handle profile loading
+        if (newUser) {
+          try {
+            const profile = await getProfile(newUser.id)
+            setProfile(profile)
+          } catch (profileError) {
+            console.error('Error loading profile:', profileError)
+            setProfile(null)
+          }
+        } else {
+          setProfile(null)
+        }
+        
+        // Only set loading to false after everything is complete
+        setLoading(false)
+        setInitialLoadComplete(true)
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        setLoading(false)
+        setInitialLoadComplete(true)
       }
-      setLoading(false)
+    }
+
+    getInitialSession()
+
+    // Enhanced cross-tab synchronization using storage events
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('sb-') && e.key.includes('auth-token')) {
+        console.log('Auth token changed in another tab, refreshing session immediately')
+        // Force immediate session refresh when auth token changes
+        getInitialSession()
+      }
+    }
+
+    // Listen for storage changes from other tabs
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange)
+    }
+
+    // Enhanced session sync for cross-tab communication
+    const unsubscribeSessionSync = useSessionSync((event) => {
+      console.log('Session sync event received:', event)
+      
+      if (event === 'signout') {
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
+      } else if (event === 'signin' || event === 'token_refresh') {
+        // Force immediate session refresh when signin/refresh detected
+        console.log('Forcing immediate session refresh due to sync event')
+        getInitialSession()
+      }
     })
 
-    // Listen for auth changes
+    // Listen for auth changes with enhanced handling
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change:", event, session?.user?.id)
 
-      setUser(session?.user ?? null)
+      // Only process auth changes after initial load is complete
+      if (!initialLoadComplete && event !== 'INITIAL_SESSION') {
+        return
+      }
 
-      if (session?.user) {
-        // Handle auth events - only refresh profile when user is signed in
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Give the database trigger a moment to create the profile
-          setTimeout(() => {
-            getProfile(session.user.id).then(setProfile)
-          }, 200)
-        } else {
-          getProfile(session.user.id).then(setProfile)
+      // Set loading state for auth changes (but not initial load)
+      if (initialLoadComplete) {
+        setLoading(true)
+      }
+
+      // Update user state immediately
+      const newUser = session?.user ?? null
+      setUser(newUser)
+
+      if (newUser) {
+        // Broadcast signin to other tabs for new sessions
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          broadcastSessionEvent('signin')
+          // Force immediate sync across all tabs
+          forceImmediateSessionSync()
+        }
+        
+        // Handle auth events - refresh profile for all events
+        try {
+          const profile = await getProfile(newUser.id)
+          setProfile(profile)
+        } catch (error) {
+          console.error('Error refreshing profile on auth change:', error)
+          setProfile(null)
         }
       } else {
         setProfile(null)
+        // Force immediate sync when user signs out
+        if (event === 'SIGNED_OUT') {
+          forceImmediateSessionSync()
+        }
       }
-      setLoading(false)
+      
+      // Only set loading to false after everything is processed
+      if (initialLoadComplete) {
+        setLoading(false)
+      }
     })
 
-    // Handle auth success from URL params (after OAuth redirect)
-    const handleAuthSuccess = () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      if (urlParams.get('auth_success') === 'true') {
-        console.log('Auth success detected, forcing refresh...')
-        // Force refresh the session to ensure state is updated
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            setUser(session.user)
-            getProfile(session.user.id).then(setProfile)
-          }
-        })
-        // Clean up URL
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete('auth_success')
-        window.history.replaceState({}, '', newUrl.toString())
-      }
-    }
-
-    // Check for auth success on mount and on focus
-    handleAuthSuccess()
-    window.addEventListener('focus', handleAuthSuccess)
+    // Note: Auth success handling is now managed by AuthStateHandler component
+    // to prevent duplicate processing and race conditions
 
     return () => {
       subscription.unsubscribe()
-      window.removeEventListener('focus', handleAuthSuccess)
+      unsubscribeSessionSync()
+      // Clean up storage event listener
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorageChange)
+      }
     }
   }, [])
 

@@ -65,7 +65,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
     try {
       setLoading(true)
       const teamId = teamData?.team?.id || teamData?.id
-      const response = await fetch(`/api/tasks/${teamId}`)
+      const response = await fetch(`/api/tasks/team/${teamId}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch tasks')
@@ -86,7 +86,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
   const createTaskAPI = async (taskData) => {
     try {
       const teamId = teamData?.team?.id || teamData?.id
-      const response = await fetch(`/api/tasks/${teamId}`, {
+      const response = await fetch(`/api/tasks/team/${teamId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

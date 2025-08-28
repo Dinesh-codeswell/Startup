@@ -8,7 +8,6 @@ import { Eye, FileText, Folder, BarChart3 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context" // Standard import
-import { supabaseAdmin } from "@/lib/supabase-admin";
 
 /* Map resource.type -> icon */
 const getIcon = (type: string) => {
@@ -51,12 +50,13 @@ export default function ResourcesContent() {
         resources.map(async (resource) => {
           try {
             const res = await fetch(`/api/resources/${resource.id}/views`, { method: "GET" })
+
             const data = await res.json()
             results[resource.id] = data.viewCount || 2500
           } catch {
             results[resource.id] = 2500
           }
-        })
+        }),
       )
       setViewsMap(results)
     }
@@ -67,14 +67,8 @@ export default function ResourcesContent() {
     setIsVisible(true)
   }, [])
 
-  const handleGetNow = (resourceLink: string) => {
-    if (!user) {
-      // Redirect to signup if not authenticated
-      router.push("/signup")
-      return
-    }
-    // Open resource link if authenticated
-    window.open(resourceLink, "_blank", "noopener,noreferrer")
+  const handleGetNow = (resourceId: number) => {
+    router.push(`/resources/${resourceId}`)
   }
 
   return (
@@ -139,7 +133,7 @@ export default function ResourcesContent() {
 
                 {/* Action */}
                 <Button
-                  onClick={() => handleGetNow(resource.link)}
+                  onClick={() => handleGetNow(resource.id)}
                   variant="outline"
                   className="w-full border-blue-200 bg-transparent text-blue-600 hover:border-blue-300 hover:bg-blue-50"
                 >

@@ -14,38 +14,9 @@ const testimonials = [
     rating: 5,
     initials: "MA",
     image:
-      "https://media.licdn.com/dms/image/v2/D5603AQHyFJ0CPpmciQ/profile-displayphoto-shrink_400_400/B56ZcfnbsDHoAg-/0/1748582121233?e=1756339200&v=beta&t=48TkPZdlkuCXPm5Q2pKtTIcjwmDxb63kG1kB8pLDcfE",
+      "/images/mansi.jpeg",
   },
-  {
-    name: "Priyanshi Pranami",
-    College: "IMED, Pune",
-    content:
-      "Beyond Career's resource library is a goldmine. Every deck is action-oriented and easy to apply. I've already used two of them to update my CV and pitch myself to recruiters. Thank you!",
-    rating: 5,
-    initials: "PP",
-    image:
-      "https://media.licdn.com/dms/image/v2/D4D03AQHaNCsRYR76Pw/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1719909638152?e=1756339200&v=beta&t=H1xX6DouRQqNOtSM8MJnm-RRSBVV5b2UCzFozDBQIVk",
-  },
-  {
-    name: "Vanshika Dua",
-    College: "CGC Landran",
-    content:
-      "The interview was structured and professional. The mentor from Beyond Career was polite, clear, and explained the expectations in detail. I left feeling more confident and aligned with the role.",
-    rating: 5,
-    initials: "VD",
-    image:
-      "https://media.licdn.com/dms/image/v2/D5603AQGFFJKly1pjlA/profile-displayphoto-scale_400_400/B56Zd_cAQVH8Ag-/0/1750189739176?e=1756339200&v=beta&t=NTBY2iQLO_6cn1Ir2T3EcvQV620Rk4jsRC3FuxqjPYg",
-  },
-  {
-    name: "Isha Mehla",
-    College: "UPES, Dehradun",
-    content:
-      "Beyond Career's mentor provided precise and effective solutions that helped guide me exactly where I needed to go. I now have clarity, confidence, and direction.",
-    rating: 5,
-    initials: "IM",
-    image:
-      "https://media.licdn.com/dms/image/v2/D5603AQGHegwK-7ZmTw/profile-displayphoto-scale_400_400/B56Zf47Z5XGoAk-/0/1752228014309?e=1756339200&v=beta&t=8jHUHTDSM0ikVqQhWEzifho6r5W4W-o8GOy2sBEzECk",
-  },
+ 
   {
     name: "Sagar",
     College: "DTU, Delhi",
@@ -54,18 +25,9 @@ const testimonials = [
     rating: 5,
     initials: "S",
     image:
-      "https://media.licdn.com/dms/image/v2/D4D35AQF5Fnv0lQxJQQ/profile-framedphoto-shrink_400_400/B4DZUzp5feHIAc-/0/1740328376612?e=1754146800&v=beta&t=Q4FOfUOEQpj498EaXEqdgbkIKO4WMzMBdMHpCyLEV8g",
+      "/images/dtu.jpeg",
   },
-  {
-    name: "Anshika Chawla",
-    College: "MAIMS, Delhi",
-    content:
-      "They're clearly very experienced. Answered all my doubts with patience, and the session was filled with practical wisdom. Would love to attend another Beyond Career session.",
-    rating: 5,
-    initials: "AC",
-    image:
-      "https://media.licdn.com/dms/image/v2/D4D03AQEogInuZ_mRgg/profile-displayphoto-shrink_400_400/B4DZRzUDCDHIAg-/0/1737101424176?e=1756339200&v=beta&t=gg6sNpdaBtBU7zsUAPittngjX17gzVPoodfzWtJMhsQ",
-  },
+ 
   {
     name: "Rohit Sinha",
     College: "IIT Delhi",
@@ -74,7 +36,7 @@ const testimonials = [
     rating: 5,
     initials: "RS",
     image:
-      "https://media.licdn.com/dms/image/v2/D4D03AQHZgV2LRfQHaA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1719303495113?e=1756339200&v=beta&t=qHVva8RPIGIe-fpAQ__iyy8FSfdrqSP1NK_iIBp-_VE",
+      "/images/iit delhi.jpeg",
   },
   {
     name: "Priyanshi Bansal",
@@ -84,7 +46,7 @@ const testimonials = [
     rating: 5,
     initials: "PB",
     image:
-      "https://media.licdn.com/dms/image/v2/D5603AQHCm5Obo1Q9ow/profile-displayphoto-shrink_400_400/B56ZRLbJDEHoAg-/0/1736432195892?e=1756339200&v=beta&t=UkEF75qYmn75-5avtEVzz_wA6BNRhFxVLQzc_x2y2a0",
+      "/images/priyanshi.jpeg",
   },
   {
     name: "Aditya Rao",
@@ -94,34 +56,25 @@ const testimonials = [
     rating: 5,
     initials: "AR",
     image:
-      "https://media.licdn.com/dms/image/v2/D4D03AQHKkex9x3szRg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1730989414594?e=1756339200&v=beta&t=DDRODyPqZAvHgG0Dvu-xPBHC_A0eNKbFs4upo_G7Y_c",
+      "/images/iit bombay.jpeg",
   },
-  {
-    name: "Gargi Narayan",
-    College: "Ramjas College, DU",
-    content:
-      "They explained exactly what recruiters are looking for in CVs. The insights were clear, actionable, and highly valuable. Beyond Career is worth it.",
-    rating: 5,
-    initials: "GN",
-    image:
-      "https://media.licdn.com/dms/image/v2/D5603AQE5e1Sl39C5DQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1719590970701?e=1756339200&v=beta&t=N_4jDkBVF-g7Keq9___uVkemhEBpjIwe5MGyWRwYUFI",
-  },
-  {
-    name: "Vikash Krishna Agrawal",
-    College: "BJB Autonomous College",
-    content:
-      "Best advice from the most down-to-earth mentor. Beyond Career didn't just point out my mistakes — they helped me solve them.",
-    rating: 5,
-    initials: "VKA",
-    image:
-      "https://media.licdn.com/dms/image/v2/D5635AQEF0_Cwrc8Twg/profile-framedphoto-shrink_400_400/B56ZeoJ4yVGoAc-/0/1750872854060?e=1754146800&v=beta&t=dk-591nz7ixaa8R76hmJiEgGSlrOksegTeWa_a-ZDBs",
-  },
+ 
 ]
 
 export function TestimonialsSection() {
   const [isVisible, setIsVisible] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     if (!isAutoPlaying) return
@@ -161,7 +114,8 @@ export function TestimonialsSection() {
 
   const getVisibleTestimonials = () => {
     const result = []
-    for (let i = 0; i < 3; i++) {
+    const itemsToShow = isMobile ? 1 : 3
+    for (let i = 0; i < itemsToShow; i++) {
       const index = (currentIndex + i) % testimonials.length
       result.push(testimonials[index])
     }
@@ -171,83 +125,90 @@ export function TestimonialsSection() {
   return (
     <section
       id="testimonials-section"
-      className="py-16 px-4 bg-gradient-to-br from-[#BAD6EB]/20 via-white to-[#F7F2EB]/30 relative overflow-hidden"
+      className="py-8 sm:py-12 lg:py-16 px-3 sm:px-4 bg-gradient-to-br from-[#BAD6EB]/20 via-white to-[#F7F2EB]/30 relative overflow-hidden"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
-      {/* Background decoration - removed animations */}
-      <div className="absolute top-10 left-10 w-64 h-64 bg-gradient-to-r from-[#4ebbf8]/5 to-[#334EAC]/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-10 right-10 w-48 h-48 bg-gradient-to-r from-[#BAD6EB]/10 to-[#4ebbf8]/5 rounded-full blur-3xl" />
+      {/* Background decoration - optimized for mobile */}
+      <div className="absolute top-5 sm:top-10 left-5 sm:left-10 w-32 sm:w-48 lg:w-64 h-32 sm:h-48 lg:h-64 bg-gradient-to-r from-[#4ebbf8]/5 to-[#334EAC]/5 rounded-full blur-2xl sm:blur-3xl" />
+      <div className="absolute bottom-5 sm:bottom-10 right-5 sm:right-10 w-24 sm:w-36 lg:w-48 h-24 sm:h-36 lg:h-48 bg-gradient-to-r from-[#BAD6EB]/10 to-[#4ebbf8]/5 rounded-full blur-2xl sm:blur-3xl" />
 
-      <div className="container mx-auto">
-        <div className={`text-center mb-12 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}>
-          <div className="inline-flex items-center px-4 py-2 glass rounded-full text-sm font-medium text-[#4ebbf8] mb-4 shadow-lg hover:glass-strong transition-all duration-300">
+      <div className="container mx-auto max-w-6xl">
+        <div className={`text-center mb-8 sm:mb-12 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}>
+          <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 glass rounded-full text-xs sm:text-sm font-medium text-[#4ebbf8] mb-3 sm:mb-4 shadow-lg hover:glass-strong transition-all duration-300">
             TESTIMONIALS
           </div>
-          <h2 className="text-3xl font-bold text-[#081F5C] mb-4">Backed by 20,000+ Students Across India</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#081F5C] mb-3 sm:mb-4 px-2">
+            Backed by 20,000+ Students Across India
+          </h2>
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-4">
             Students from top colleges have trusted Beyond Career to guide their journeys. See how we helped them land
             interviews, internships, and career clarity.
           </p>
         </div>
 
         <div className="relative max-w-6xl mx-auto">
+          {/* Navigation buttons - hidden on mobile for cleaner look */}
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 -ml-4"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 -ml-2 sm:-ml-4 hidden sm:flex w-8 h-8 sm:w-10 sm:h-10"
             onClick={goToPrevious}
             aria-label="Previous testimonial"
           >
-            <ChevronLeft className="h-5 w-5 text-[#334EAC]" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-[#334EAC]" />
           </Button>
 
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 -mr-4"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 -mr-2 sm:-mr-4 hidden sm:flex w-8 h-8 sm:w-10 sm:h-10"
             onClick={goToNext}
             aria-label="Next testimonial"
           >
-            <ChevronRight className="h-5 w-5 text-[#334EAC]" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-[#334EAC]" />
           </Button>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Cards container with responsive grid */}
+          <div className={`grid gap-4 sm:gap-6 lg:gap-8 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
             {getVisibleTestimonials().map((testimonial, index) => (
               <Card
                 key={`${testimonial.name}-${currentIndex}-${index}`}
-                className="border-0 shadow-lg glass hover:glass-strong rounded-2xl transition-all duration-300 hover:shadow-xl group overflow-hidden min-h-[300px]"
+                className="border-0 shadow-lg glass hover:glass-strong rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl group overflow-hidden"
               >
-                <CardContent className="p-6 relative h-full flex flex-col">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#4ebbf8]/5 to-[#334EAC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                <CardContent className="p-4 sm:p-6 relative h-full flex flex-col min-h-[280px] sm:min-h-[320px]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#4ebbf8]/5 to-[#334EAC]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl sm:rounded-2xl" />
 
-                  <div className="flex items-center mb-4 relative z-10">
+                  {/* Rating stars */}
+                  <div className="flex items-center mb-3 sm:mb-4 relative z-10">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 text-yellow-300 fill-current" />
+                      <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300 fill-current" />
                     ))}
                   </div>
 
-                  <p className="text-gray-600 mb-6 italic relative z-10 group-hover:text-gray-700 transition-colors duration-300 flex-grow">
+                  {/* Content with better mobile typography */}
+                  <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic relative z-10 group-hover:text-gray-700 transition-colors duration-300 flex-grow leading-relaxed">
                     "{testimonial.content}"
                   </p>
 
-                  <div className="flex items-center gap-3 relative z-10 mt-auto">
+                  {/* Author info with responsive sizing */}
+                  <div className="flex items-center gap-2 sm:gap-3 relative z-10 mt-auto">
                     {testimonial.image ? (
                       <img
                         src={testimonial.image || "/placeholder.svg"}
                         alt={testimonial.name}
-                        className="w-10 h-10 rounded-full object-cover shadow-lg hover:scale-105 transition-transform duration-200"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-lg hover:scale-105 transition-transform duration-200"
                       />
                     ) : (
-                      <div className="w-10 h-10 bg-gradient-to-r from-[#4ebbf8] to-[#334EAC] text-white rounded-full flex items-center justify-center font-semibold shadow-lg hover:scale-105 transition-transform duration-200">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#4ebbf8] to-[#334EAC] text-white rounded-full flex items-center justify-center font-semibold shadow-lg hover:scale-105 transition-transform duration-200 text-xs sm:text-sm">
                         {testimonial.initials}
                       </div>
                     )}
                     <div>
-                      <p className="font-semibold text-[#081F5C] group-hover:text-[#4ebbf8] transition-colors duration-300">
+                      <p className="font-semibold text-[#081F5C] group-hover:text-[#4ebbf8] transition-colors duration-300 text-sm sm:text-base">
                         {testimonial.name}
                       </p>
-                      <p className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
+                      <p className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
                         {testimonial.College}
                       </p>
                     </div>
@@ -257,12 +218,37 @@ export function TestimonialsSection() {
             ))}
           </div>
 
-          <div className="flex justify-center mt-8 space-x-2">
+          {/* Mobile navigation buttons */}
+          <div className="flex justify-center gap-4 mt-6 sm:hidden">
+            <Button
+              variant="outline"
+              size="icon"
+              className="glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 w-10 h-10"
+              onClick={goToPrevious}
+              aria-label="Previous testimonial"
+            >
+              <ChevronLeft className="h-5 w-5 text-[#334EAC]" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="glass border-white/30 bg-white/80 hover:bg-white shadow-lg hover:scale-105 transition-all duration-200 w-10 h-10"
+              onClick={goToNext}
+              aria-label="Next testimonial"
+            >
+              <ChevronRight className="h-5 w-5 text-[#334EAC]" />
+            </Button>
+          </div>
+
+          {/* Pagination dots - hidden on mobile, smaller on tablet */}
+          <div className="hidden sm:flex justify-center mt-6 sm:mt-8 space-x-1.5 sm:space-x-2">
             {testimonials.map((_, index) => (
               <button
                 key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentIndex ? "bg-[#4ebbf8] scale-125 shadow-lg" : "bg-gray-300 hover:bg-gray-400"
+                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                  index === currentIndex 
+                    ? "bg-[#4ebbf8] scale-125 shadow-lg" 
+                    : "bg-gray-300 hover:bg-gray-400"
                 }`}
                 onClick={() => goToSlide(index)}
                 aria-label={`Go to testimonial ${index + 1}`}

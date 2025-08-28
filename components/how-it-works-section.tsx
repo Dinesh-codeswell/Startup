@@ -50,7 +50,10 @@ const HowItWorksSection = () => {
   }, [])
 
   return (
-    <section id="how-it-works-section" className="py-20 bg-new-deep-purple relative overflow-hidden bg-indigo-400">
+    <section
+      id="how-it-works-section"
+      className="py-20 bg-new-deep-purple relative overflow-hidden bg-indigo-300"
+    >
       {/* Background decoration */}
       <div className="absolute top-10 right-10 w-64 h-64 bg-gradient-to-r from-[#4ebbf8]/10 to-[#334EAC]/10 rounded-full blur-3xl animate-float animate-morph" />
       <div
@@ -69,82 +72,79 @@ const HowItWorksSection = () => {
           </p>
         </div>
 
-        {/* Steps Grid - now a flex container for numbers and SVGs */}
-        <div className="relative z-10 flex justify-between items-start w-full max-w-7xl mx-auto">
-          {/* Numbers */}
+        {/* Steps */}
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center md:items-start gap-12 md:gap-0">
           {steps.map((step, index) => (
-            <div key={step.step} className="relative z-10 flex flex-col items-center w-1/3 px-4">
-              {/* 3D Number */}
+            <div key={step.step} className="relative flex flex-col items-center w-full md:w-1/3 px-4 text-center">
+              {/* Number */}
               <div
-                className={`text-6xl md:text-7xl lg:text-8xl font-extrabold text-new-light-purple mb-4 transition-transform duration-500 ${
+                className={`text-5xl sm:text-6xl md:text-7xl font-extrabold text-new-light-purple mb-4 transition-transform duration-500 ${
                   isVisible ? "animate-scale-in" : "opacity-0"
                 }`}
                 style={{
                   textShadow:
-                    "4px 4px 0px rgba(0,0,0,0.1), 8px 8px 0px rgba(0,0,0,0.05), 12px 12px 0px rgba(0,0,0,0.02)", // Simulating 3D
+                    "4px 4px 0px rgba(0,0,0,0.1), 8px 8px 0px rgba(0,0,0,0.05), 12px 12px 0px rgba(0,0,0,0.02)",
                   animationDelay: `${index * 0.2}s`,
                 }}
               >
                 {step.step}
               </div>
-              {/* Original Step Content */}
-              <h3 className="text-xl font-semibold text-white mb-3 text-center">{step.title}</h3>
-              <p className="text-white/80 leading-relaxed text-center">{step.description}</p>
+
+              {/* Icon */}
+              
+
+              {/* Title */}
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{step.title}</h3>
+
+              {/* Description */}
+              <p className="text-white/80 text-sm sm:text-base leading-relaxed">{step.description}</p>
             </div>
           ))}
 
-          {/* Dotted line connectors - positioned absolutely within the flex container */}
-          {/* Line 1 -> 2 */}
+          {/* Curved connectors - only on medium+ screens */}
           <svg
-            className="absolute top-[-40px] w-[400px] h-[50px]"
+            className="hidden md:block absolute top-[-40px] w-[400px] h-[50px]"
             style={{ left: "calc(33.33% - 200px)", animationDelay: `0.3s` }}
             viewBox="0 0 400 50"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              d="M0 45 C 100 5, 300 5, 400 45" // More curved, dips down
+              d="M0 45 C 100 5, 300 5, 400 45"
               stroke="white"
               strokeWidth="2"
               className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-              style={{ animationDuration: "1.5s" }}
             />
-            {/* Arrowhead */}
             <path
-              d="M395 40 L400 45 L395 50" // Aligned with new curve endpoint
+              d="M395 40 L400 45 L395 50"
               stroke="white"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-              style={{ animationDelay: `1.8s` }}
             />
           </svg>
 
-          {/* Line 2 -> 3 */}
           <svg
-            className="absolute top-[-40px] w-[400px] h-[50px]"
+            className="hidden md:block absolute top-[-40px] w-[400px] h-[50px]"
             style={{ left: "calc(66.66% - 200px)", animationDelay: `0.5s` }}
             viewBox="0 0 400 50"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              d="M0 45 C 100 5, 300 5, 400 45" // More curved, dips down
+              d="M0 45 C 100 5, 300 5, 400 45"
               stroke="white"
               strokeWidth="2"
               className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-              style={{ animationDuration: "1.5s" }}
             />
-            {/* Arrowhead */}
             <path
-              d="M395 40 L400 45 L395 50" // Aligned with new curve endpoint
+              d="M395 40 L400 45 L395 50"
               stroke="white"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-              style={{ animationDelay: `2.0s` }}
             />
           </svg>
         </div>

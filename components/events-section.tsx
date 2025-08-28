@@ -110,7 +110,7 @@ export function EventsSection() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>9th August 2025</span>
+                  <span>19th August 2025</span>
                 </div>
                 <div className="flex items-center text-gray-700 text-sm">
                   <svg

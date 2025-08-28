@@ -85,46 +85,49 @@ export function TeamChatWindow({
 
   const loadParticipants = async () => {
     try {
-      // Mock participants data for now
-      const mockParticipants: TeamChatParticipantWithDetails[] = [
-        {
-          id: 'participant-1',
-          team_id: teamId,
-          submission_id: currentUserSubmissionId,
-          joined_at: new Date().toISOString(),
-          last_seen_at: new Date().toISOString(),
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          submission: {
-            id: currentUserSubmissionId,
-            full_name: currentUserName,
-            college_name: 'Your College',
-            current_year: '3rd Year'
-          },
-          unread_count: 0
+      const response = await fetch(`/api/team-chat/participants?team_id=${teamId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setParticipants(data.data || [])
+        } else {
+          console.error('Failed to load participants:', data.error)
+          setParticipants([])
         }
-      ]
-      setParticipants(mockParticipants)
+      } else {
+        console.error('Failed to fetch participants')
+        setParticipants([])
+      }
     } catch (error) {
       console.error('Error loading participants:', error)
+      setParticipants([])
     }
   }
 
   const loadStats = async () => {
     try {
-      // Mock stats data for now
-      const mockStats: TeamChatStats = {
-        total_messages: messages.length,
-        messages_today: 5,
-        active_participants: 3,
-        most_active_member: {
-          name: currentUserName,
-          message_count: 10
-        },
-        recent_activity: []
+      const response = await fetch(`/api/team-chat/stats?team_id=${teamId}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setStats(data.data)
+        } else {
+          console.error('Failed to load stats:', data.error)
+          // Fallback to basic stats
+          setStats({
+            total_messages: messages.length,
+            messages_today: 0,
+            active_participants: participants.length,
+            most_active_member: {
+              name: 'No activity',
+              message_count: 0
+            },
+            recent_activity: []
+          })
+        }
+      } else {
+        console.error('Failed to fetch stats')
       }
-      setStats(mockStats)
     } catch (error) {
       console.error('Error loading stats:', error)
     }

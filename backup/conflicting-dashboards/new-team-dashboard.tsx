@@ -282,10 +282,14 @@ const TeamDashboard = () => {
   const [error, setError] = useState(null)
   const [unreadCounts, setUnreadCounts] = useState({ chat: 0, tasks: 0 })
 
-  const [currentUser] = useState({
-    id: "user_1",
-    role: "Team Lead",
-  })
+  // Get current user data from userStatus
+  const currentUser = {
+    id: userStatus?.submission?.id || "unknown",
+    role: "Pending", // User doesn't have a team yet
+    submissionId: userStatus?.submission?.id, // Use real submission ID for chat functionality
+    name: userStatus?.submission?.full_name || "Unknown User",
+    email: userStatus?.submission?.email,
+  }
   const [currentTasks, setCurrentTasks] = useState(mockTeamData.tasks || [])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
@@ -1539,7 +1543,7 @@ const TasksPreviewWidget = ({ upcomingTasks, members, currentUser, onOpenTasks }
 
 // Chat Screen Component
 const ChatScreen = ({ teamData, currentUser }) => {
-  const [messages, setMessages] = useState(teamData.chatMessages || [])
+  const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -1554,6 +1558,39 @@ const ChatScreen = ({ teamData, currentUser }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/team-chat/messages')
+        if (!response.ok) {
+          throw new Error('Failed to fetch messages')
+        }
+        const data = await response.json()
+        
+        // Transform API response to component format
+        const transformedMessages = data.messages.map(msg => ({
+          id: msg.id,
+          userId: msg.user_id,
+          userName: msg.user_name,
+          userAvatar: msg.user_avatar,
+          message: msg.content,
+          timestamp: msg.created_at,
+          isUnread: !msg.is_read
+        }))
+        
+        setMessages(transformedMessages)
+      } catch (err) {
+        console.error('Error loading messages:', err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMessages()
+  }, [])
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files)
@@ -1576,24 +1613,46 @@ const ChatScreen = ({ teamData, currentUser }) => {
     setAttachedFiles((prev) => prev.filter((file) => file.id !== fileId))
   }
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault()
     if (!newMessage.trim() && attachedFiles.length === 0) return
 
-    const message = {
-      id: `msg_${Date.now()}`,
-      userId: currentUser.id,
-      userName: "You",
-      userAvatar: "https://images.unsplash.com/photo-1494790108755-2616b612b1c0?w=40&h=40&fit=crop&crop=face",
-      message: newMessage.trim(),
-      attachments: attachedFiles, // Include attached files in message
-      timestamp: new Date().toISOString(),
-      isUnread: false,
-    }
+    try {
+      const response = await fetch('/api/team-chat/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: newMessage.trim(),
+          attachments: attachedFiles
+        })
+      })
 
-    setMessages((prev) => [...prev, message])
-    setNewMessage("")
-    setAttachedFiles([]) // Clear attached files after sending
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const data = await response.json()
+      
+      // Add the new message to the local state
+      const newMsg = {
+        id: data.message.id,
+        userId: data.message.user_id,
+        userName: data.message.user_name,
+        userAvatar: data.message.user_avatar,
+        message: data.message.content,
+        timestamp: data.message.created_at,
+        isUnread: false
+      }
+      
+      setMessages((prev) => [...prev, newMsg])
+      setNewMessage("")
+      setAttachedFiles([]) // Clear attached files after sending
+    } catch (err) {
+      console.error('Error sending message:', err)
+      // Optionally show error to user
+    }
   }
 
   return (
@@ -1607,24 +1666,40 @@ const ChatScreen = ({ teamData, currentUser }) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div key={message.id} className="flex items-start space-x-3">
-            <img
-              src={message.userAvatar || "/placeholder.svg"}
-              alt={message.userName}
-              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-            />
-            <div className="flex-1">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-900">{message.userName}</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
+        {loading && !currentUser ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-full space-y-4">
+            <p className="text-red-500 text-center">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <div key={message.id} className="flex items-start space-x-3">
+              <img
+                src={message.userAvatar || "/placeholder.svg"}
+                alt={message.userName}
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+              />
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-900">{message.userName}</span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
               <p className="text-sm text-gray-700 mt-1">{message.message}</p>
             </div>
           </div>
-        ))}
+        ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 

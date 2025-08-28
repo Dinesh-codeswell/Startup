@@ -184,10 +184,6 @@ const mockTeamData = {
       },
     },
   },
-  unreadCounts: {
-    chat: 3,
-    tasks: 1,
-  },
   tasks: [
     {
       id: "task_1",
@@ -255,22 +251,32 @@ const FEATURE_FLAGS = {
 const ROLE_PERMISSIONS = {
   canEditTeam: (role) => ["Team Lead", "Admin"].includes(role),
   canManageTasks: (role) => ["Team Lead", "Admin"].includes(role),
-  canAccessSettings: (role) => ["Team Lead", "Admin"].includes(role),
+  canAccessSettings: (role) => true, // Allow all team members to access settings
 }
 
 // Main Dashboard Component
 const TeamDashboard = ({ userStatus }) => {
-  const [activeRoute, setActiveRoute] = useState("dashboard")
+  const [activeRoute, setActiveRoute] = useState("chat")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [teamData, setTeamData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [unreadCounts, setUnreadCounts] = useState({ chat: 0, tasks: 0 })
 
-  const [currentUser] = useState({
-    id: "user_1",
-    role: "Team Lead",
-  })
+
+  // Get current user data from userStatus
+  const currentUser = {
+    id: userStatus?.submission?.user_id || "unknown", // Use actual user ID for API calls
+    role: userStatus?.team?.members?.find(m => m.submission_id === userStatus?.submission?.id)?.role_in_team || "Member",
+    submissionId: userStatus?.submission?.id, // Use real submission ID for chat functionality
+    name: userStatus?.submission?.full_name || "Unknown User",
+    email: userStatus?.submission?.email,
+  }
+  
+  // Debug logging for currentUser
+  console.log("🔍 TeamDashboard - currentUser constructed:", currentUser)
+  console.log("🔍 TeamDashboard - userStatus.submission.user_id:", userStatus?.submission?.user_id)
+  console.log("🔍 TeamDashboard - userStatus.submission:", userStatus?.submission)
+  console.log("🔍 TeamDashboard - userStatus.team:", userStatus?.team)
   const [currentTasks, setCurrentTasks] = useState(mockTeamData.tasks || [])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [showRequestModal, setShowRequestModal] = useState(false)
@@ -323,16 +329,29 @@ const TeamDashboard = ({ userStatus }) => {
             },
             members: transformedMembers,
             insights: mockTeamData.insights, // Use mock insights for now
-            unreadCounts: { chat: 0, tasks: 0 },
+
             tasks: [], // Empty tasks initially
             chatMessages: [], // Empty chat initially
           }
+          
+          // Additional debug logging
+          console.log("🔍 TeamDashboard - userStatus.team.id:", userStatus.team.id)
+          console.log("🔍 TeamDashboard - realTeamData.team.id:", realTeamData.team.id)
+          console.log("🔍 TeamDashboard - currentUser.submissionId:", currentUser.submissionId)
+          console.log("=== TeamDashboard Debug Info ===")
+          console.log("🔍 TeamDashboard - realTeamData:", realTeamData)
+          console.log("🔍 TeamDashboard - currentUser:", currentUser)
+          console.log("🔍 TeamDashboard - realTeamData.team.id:", realTeamData.team.id)
+          console.log("🔍 TeamDashboard - currentUser.submissionId:", currentUser.submissionId)
+          console.log("🔍 TeamDashboard - userStatus:", userStatus)
+          console.log("🔍 TeamDashboard - userStatus.submission:", userStatus?.submission)
+          console.log("🔍 TeamDashboard - userStatus.submission.id:", userStatus?.submission?.id)
           setTeamData(realTeamData)
-          setUnreadCounts(realTeamData.unreadCounts)
+
         } else {
           // User doesn't have a team - set to null to show locked state
           setTeamData(null)
-          setUnreadCounts({ chat: 0, tasks: 0 })
+
         }
       } catch (err) {
         setError("Failed to load team data")
@@ -346,29 +365,12 @@ const TeamDashboard = ({ userStatus }) => {
     }
   }, [userStatus])
 
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeRoute !== "chat") {
-        setUnreadCounts((prev) => ({
-          ...prev,
-          chat: prev.chat + Math.floor(Math.random() * 2),
-        }))
-      }
-    }, 30000)
 
-    return () => clearInterval(interval)
-  }, [activeRoute])
 
   // Handle route changes
   const handleRouteChange = (route) => {
     setActiveRoute(route)
     setIsMobileMenuOpen(false)
-
-    // Reset unread counts when entering chat
-    if (route === "chat") {
-      setUnreadCounts((prev) => ({ ...prev, chat: 0 }))
-    }
   }
 
   // Copy team code to clipboard
@@ -505,7 +507,10 @@ const TeamDashboard = ({ userStatus }) => {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="text-xl text-gray-900 font-bold">
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                console.log('🖱️ Mobile menu clicked, toggling menu')
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+              }}
               className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
               aria-label="Toggle navigation menu"
             >
@@ -522,7 +527,7 @@ const TeamDashboard = ({ userStatus }) => {
           <LeftNavigation
             activeRoute={activeRoute}
             onRouteChange={handleRouteChange}
-            unreadCounts={unreadCounts}
+            unreadCounts={{ chat: 0, tasks: 0 }}
             isMobileMenuOpen={isMobileMenuOpen}
             currentUserRole={currentUser.role}
           />
@@ -553,7 +558,12 @@ const TeamDashboard = ({ userStatus }) => {
                 handleSaveTeamName={handleSaveTeamName}
               />
             )}
-            {activeRoute === "chat" && <ChatScreen teamData={teamData} currentUser={currentUser} />}
+            {activeRoute === "chat" && (
+              <ChatScreen
+                teamData={teamData}
+                currentUser={currentUser}
+              />
+            )}
             {activeRoute === "tasks" && FEATURE_FLAGS.tasks && (
               <TasksScreen teamData={teamData} currentUser={currentUser} onRouteChange={handleRouteChange} />
             )}

@@ -7,44 +7,52 @@ import Avatar from "./Avatar"
 interface ChatScreenProps {
   teamData: any
   currentUser: any
+  onUnreadCountChange?: (count: number) => void
 }
 
-export default function ChatScreen({ teamData, currentUser }: ChatScreenProps) {
+export default function ChatScreen({ teamData, currentUser, onUnreadCountChange }: ChatScreenProps) {
   const [message, setMessage] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   
-  // Show loading state if user authentication is still being determined
-  if (!currentUser) {
-    return (
-      <div className="flex flex-col h-full bg-white">
-        <div className="flex-1 p-4">
-          <div className="animate-pulse space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-gray-200 p-4">
-          <div className="animate-pulse">
-            <div className="h-10 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Mock chat messages data
+  const [chatMessages] = useState([
+    {
+      id: 1,
+      userName: "Alex Chen",
+      userAvatar: "/placeholder.svg?height=40&width=40&text=AC",
+      message: "Hey team! Just finished the user research phase. Found some interesting insights about our target audience.",
+      timestamp: "2:30 PM",
+      isCurrentUser: false,
+    },
+    {
+      id: 2,
+      userName: "Sarah Kim",
+      userAvatar: "/placeholder.svg?height=40&width=40&text=SK",
+      message: "That's awesome! Can you share the key findings in our next meeting?",
+      timestamp: "2:32 PM",
+      isCurrentUser: false,
+    },
+    {
+      id: 3,
+      userName: "You",
+      userAvatar: "/placeholder.svg?height=40&width=40&text=ME",
+      message: "I've been working on the prototype. Should have something to show by tomorrow.",
+      timestamp: "2:35 PM",
+      isCurrentUser: true,
+    },
+    {
+      id: 4,
+      userName: "Mike Johnson",
+      userAvatar: "/placeholder.svg?height=40&width=40&text=MJ",
+      message: "Perfect timing! I'll have the technical architecture ready by then too.",
+      timestamp: "2:37 PM",
+      isCurrentUser: false,
+    },
+  ])
+  
+
 
   const emojis = [
     "😀",
@@ -129,32 +137,7 @@ export default function ChatScreen({ teamData, currentUser }: ChatScreenProps) {
     "💔",
   ]
 
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      userName: "Marcus Johnson",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=MJ",
-      message: "Just finished the initial market research. The data looks promising!",
-      timestamp: "09:00 PM",
-      isCurrentUser: false,
-    },
-    {
-      id: 2,
-      userName: "Elena Rodriguez",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=ER",
-      message: "Great work! I'll start working on the design concepts based on your findings.",
-      timestamp: "08:15 PM",
-      isCurrentUser: false,
-    },
-    {
-      id: 3,
-      userName: "Sarah Chen",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=SC",
-      message: "Excellent progress team! Let's schedule a sync for tomorrow to align on next steps.",
-      timestamp: "08:30 PM",
-      isCurrentUser: true,
-    },
-  ])
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,27 +168,55 @@ export default function ChatScreen({ teamData, currentUser }: ChatScreenProps) {
     setShowEmojiPicker(!showEmojiPicker)
   }
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      const now = new Date()
-      const timestamp = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-
-      const newMessage = {
-        id: chatMessages.length + 1,
-        userName: currentUser?.name || "You",
-        userAvatar: currentUser?.avatar || "/placeholder.svg?height=40&width=40",
-        message: message.trim(),
-        timestamp: timestamp,
-        isCurrentUser: true,
+  const handleSendMessage = async () => {
+    if (!message.trim() || !teamData?.team?.id) return
+    
+    const messageText = message.trim()
+    setMessage("") // Clear input immediately for better UX
+    
+    try {
+      const response = await fetch('/api/team-chat/messages', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          team_id: teamData.team.id,
+          message_text: messageText,
+          message_type: 'text',
+          user_id: currentUser.id
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Reload messages to get the new message with proper formatting
+          await loadMessages()
+        } else {
+          console.error('Failed to send message:', data.error)
+          setError('Failed to send message')
+          setMessage(messageText) // Restore message on error
+        }
+      } else {
+        console.error('Failed to send message')
+        setError('Failed to send message')
+        setMessage(messageText) // Restore message on error
       }
-
-      setChatMessages((prev) => [...prev, newMessage])
-      setMessage("")
+    } catch (err) {
+      console.error('Error sending message:', err)
+      setError('Error sending message')
+      setMessage(messageText) // Restore message on error
     }
   }
 
   return (
     <div className="flex flex-col h-full bg-white">
+      {/* DEBUG: Visible indicator that ChatScreen main content is rendering */}
+      <div className="bg-green-500 text-white p-2 text-center font-bold">
+        🚀 ChatScreen MAIN CONTENT - Messages: {chatMessages.length}, Team: {teamData?.team?.name || 'Unknown'}
+      </div>
       <div className="px-6 py-4 border-b bg-white border-r border-slate-400 border-l-0 border-t-0 rounded">
         <h2 className="text-xl font-semibold text-gray-900">Team Chat</h2>
         <p className="text-sm text-gray-500 mt-1">4 members • 3 unread messages</p>

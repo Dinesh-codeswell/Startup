@@ -46,122 +46,64 @@ export default function TeamDashboardPage() {
       setLoading(true)
       setError(null)
 
-      // For now, we'll simulate user data since we don't have auth integration yet
-      // In production, this would get the current user's submission
-      const mockUserSubmission: SubmissionWithTeam = {
-        id: 'user-123',
-        user_id: 'auth-user-123',
-        full_name: 'John Doe',
-        email: 'john@example.com',
-        whatsapp_number: '+1234567890',
-        college_name: 'Example University',
-        current_year: '3rd Year',
-        core_strengths: ['Strategy', 'Research', 'Presentation'],
-        preferred_roles: ['Team Lead', 'Researcher'],
-        preferred_teammate_roles: ['Creative Thinker', 'Data Expert'],
-        availability: 'Fully Available (10–15 hrs/week)',
-        experience: 'Participated in 1–2',
-        case_preferences: ['consulting', 'marketing'],
-        preferred_team_size: 3,
-        status: 'team_formed',
-        submitted_at: '2025-01-13T10:00:00Z',
-        matched_at: '2025-01-13T15:30:00Z',
-        created_at: '2025-01-13T10:00:00Z',
-        updated_at: '2025-01-13T15:30:00Z',
+      // Get real user data from authentication
+      const response = await fetch('/api/team-matching/user-status')
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+      
+      const userData = await response.json()
+      if (!userData.success) {
+        throw new Error(userData.error || 'Failed to get user status')
+      }
+      
+      // Check if user has a team
+      if (!userData.data?.hasTeam || !userData.data?.team) {
+        setUserSubmission(null)
+        setLoading(false)
+        return
+      }
+      
+      // Transform real user data to expected format
+      const userStatus = userData.data
+      const realUserSubmission: SubmissionWithTeam = {
+        id: userStatus.submission.id,
+        user_id: userStatus.user.id,
+        full_name: userStatus.submission.full_name,
+        email: userStatus.submission.email,
+        whatsapp_number: userStatus.submission.whatsapp_number,
+        college_name: userStatus.submission.college_name,
+        current_year: userStatus.submission.current_year,
+        core_strengths: userStatus.submission.core_strengths,
+        preferred_roles: userStatus.submission.preferred_roles,
+        preferred_teammate_roles: userStatus.submission.preferred_teammate_roles,
+        availability: userStatus.submission.availability,
+        experience: userStatus.submission.experience,
+        case_preferences: userStatus.submission.case_preferences,
+        preferred_team_size: userStatus.submission.preferred_team_size,
+        status: userStatus.submission.status,
+        submitted_at: userStatus.submission.submitted_at,
+        matched_at: userStatus.submission.matched_at,
+        created_at: userStatus.submission.created_at,
+        updated_at: userStatus.submission.updated_at,
         team: {
-          id: 'team-456',
-          team_name: 'Team Alpha',
-          team_size: 3,
-          compatibility_score: 87.5,
-          status: 'active',
-          chat_group_id: null,
-          chat_group_invite_link: null,
-          formed_at: '2025-01-13T15:30:00Z',
-          created_at: '2025-01-13T15:30:00Z',
-          updated_at: '2025-01-13T15:30:00Z',
-          members: [
-            {
-              id: 'member-1',
-              team_id: 'team-456',
-              submission_id: 'user-123',
-              role_in_team: 'Team Lead',
-              joined_at: '2025-01-13T15:30:00Z',
-              created_at: '2025-01-13T15:30:00Z',
-              submission: {
-                id: 'user-123',
-                full_name: 'John Doe',
-                email: 'john@example.com',
-                whatsapp_number: '+1234567890',
-                college_name: 'Example University',
-                current_year: '3rd Year',
-                core_strengths: ['Strategy', 'Research', 'Presentation'],
-                preferred_roles: ['Team Lead', 'Researcher'],
-                availability: 'Fully Available (10–15 hrs/week)',
-                experience: 'Participated in 1–2'
-              } as any
-            },
-            {
-              id: 'member-2',
-              team_id: 'team-456',
-              submission_id: 'user-456',
-              role_in_team: 'Creative Thinker',
-              joined_at: '2025-01-13T15:30:00Z',
-              created_at: '2025-01-13T15:30:00Z',
-              submission: {
-                id: 'user-456',
-                full_name: 'Jane Smith',
-                email: 'jane@example.com',
-                whatsapp_number: '+1234567891',
-                college_name: 'Tech University',
-                current_year: '2nd Year',
-                core_strengths: ['Creative', 'UI/UX', 'Ideation'],
-                preferred_roles: ['Designer', 'Presenter'],
-                availability: 'Moderately Available (5–10 hrs/week)',
-                experience: 'None'
-              } as any
-            },
-            {
-              id: 'member-3',
-              team_id: 'team-456',
-              submission_id: 'user-789',
-              role_in_team: 'Data Expert',
-              joined_at: '2025-01-13T15:30:00Z',
-              created_at: '2025-01-13T15:30:00Z',
-              submission: {
-                id: 'user-789',
-                full_name: 'Mike Johnson',
-                email: 'mike@example.com',
-                whatsapp_number: '+1234567892',
-                college_name: 'Data Science Institute',
-                current_year: '4th Year',
-                core_strengths: ['Financial', 'Market', 'Technical'],
-                preferred_roles: ['Data Analyst', 'Researcher'],
-                availability: 'Fully Available (10–15 hrs/week)',
-                experience: 'Participated in 3+'
-              } as any
-            }
-          ]
+          id: userStatus.team.id,
+          team_name: userStatus.team.team_name,
+          team_size: userStatus.team.team_size,
+          compatibility_score: userStatus.team.compatibility_score,
+          status: userStatus.team.status,
+          chat_group_id: userStatus.team.chat_group_id,
+          chat_group_invite_link: userStatus.team.chat_group_invite_link,
+          formed_at: userStatus.team.formed_at,
+          created_at: userStatus.team.created_at,
+          updated_at: userStatus.team.updated_at,
+          members: userStatus.team.members || []
         },
-        notifications: [
-          {
-            id: 'notif-1',
-            submission_id: 'user-123',
-            team_id: 'team-456',
-            notification_type: 'team_formed',
-            title: 'Your Dream Team is Ready! 🎉',
-            message: 'You have been matched with 2 amazing teammates!',
-            sent_at: '2025-01-13T15:35:00Z',
-            delivery_status: 'sent',
-            delivery_method: ['email'],
-            created_at: '2025-01-13T15:35:00Z'
-          }
-        ]
+        notifications: userStatus.notifications || []
       }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setUserSubmission(mockUserSubmission)
+      // Use the real user data instead of mock data
+      setUserSubmission(realUserSubmission)
 
     } catch (error) {
       console.error('Error loading team data:', error)

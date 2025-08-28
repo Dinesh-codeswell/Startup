@@ -68,5 +68,6 @@ export default function TeamDashboardPage() {
     )
   }
 
+  console.log('TeamDashboardPage - userStatus being passed to TeamDashboard:', userStatus)
   return <TeamDashboard userStatus={userStatus} />
 }

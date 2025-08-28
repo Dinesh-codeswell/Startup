@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
     const teamIds = [...new Set(data?.map(r => r.team_id).filter(Boolean))]
     
     const [usersData, teamsData] = await Promise.all([
-      userIds.length > 0 ? supabaseAdmin.from('profiles').select('id, full_name, email').in('id', userIds) : { data: [] },
+      userIds.length > 0 ? supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', userIds) : { data: [] },
       teamIds.length > 0 ? supabaseAdmin.from('teams').select('id, team_name').in('id', teamIds) : { data: [] }
     ])
     
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       return {
         id: report.id,
         userId: report.user_id,
-        userName: user?.full_name || 'Unknown User',
+        userName: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown User' : 'Unknown User',
         userEmail: user?.email || 'unknown@email.com',
         teamId: report.team_id,
         teamName: team?.team_name || 'No Team',

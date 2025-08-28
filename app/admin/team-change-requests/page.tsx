@@ -78,6 +78,8 @@ function TeamChangeRequestsPage() {
         await fetchRequests()
         setSelectedRequest(null)
         setAdminResponse('')
+        // Refresh the page to show updates
+        window.location.reload()
       } else {
         console.error('Failed to update request:', data.error)
       }

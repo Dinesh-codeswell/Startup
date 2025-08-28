@@ -87,6 +87,8 @@ function IssuesRaisedPage() {
         setAdminResponse('')
         setNewStatus('')
         setNewPriority('')
+        // Refresh the page to show updates
+        window.location.reload()
       } else {
         console.error('Failed to update issue:', data.error)
       }

@@ -1,1 +1,236 @@
-[?25h
+Error: 
+  × cannot reassign to a variable declared with `const`
+    ╭─[D:\Downloads\Startup_Draft\app\api\team-change-request\route.ts:13:1]
+ 13 │       teamId, 
+ 14 │       requestType, 
+ 15 │       message,
+ 16 │       userDetails,
+    ·       ─────┬─────
+    ·            ╰── const variable was declared here
+ 17 │       teamDetails 
+ 18 │     } = body
+ 19 │ 
+ 20 │     // Validate required fields
+ 21 │     if (!userId || !requestType || !message) {
+ 22 │       return NextResponse.json(
+ 23 │         { error: 'Missing required fields: userId, requestType, message' },
+ 24 │         { status: 400 }
+ 25 │       )
+ 26 │     }
+ 27 │ 
+ 28 │     // Validate request type
+ 29 │     const validRequestTypes = ['leave_team', 'switch_team', 'dissolve_team']
+ 30 │     if (!validRequestTypes.includes(requestType)) {
+ 31 │       return NextResponse.json(
+ 32 │         { error: 'Invalid request type. Must be: leave_team, switch_team, or dissolve_team' },
+ 33 │         { status: 400 }
+ 34 │       )
+ 35 │     }
+ 36 │ 
+ 37 │     // Validate message length
+ 38 │     if (message.length < 10 || message.length > 1000) {
+ 39 │       return NextResponse.json(
+ 40 │         { error: 'Message must be between 10 and 1000 characters' },
+ 41 │         { status: 400 }
+ 42 │       )
+ 43 │     }
+ 44 │ 
+ 45 │     // Get user and team details for context
+ 46 │     let userTeamId = teamId
+ 47 │     let userDetails = null
+ 48 │     let teamDetails = null
+ 49 │     
+ 50 │     // Get user details
+ 51 │     const { data: userData, error: userError } = await supabaseAdmin
+ 52 │       .from('profiles')
+ 53 │       .select('team_id, full_name, email, college')
+ 54 │       .eq('id', userId)
+ 55 │       .single()
+ 56 │     
+ 57 │     if (userError) {
+ 58 │       return NextResponse.json(
+ 59 │         { error: 'User not found' },
+ 60 │         { status: 400 }
+ 61 │       )
+ 62 │     }
+ 63 │     
+ 64 │     userDetails = userData
+    ·     ─────┬─────
+    ·          ╰── cannot reassign
+ 65 │     if (!userTeamId) {
+ 66 │       userTeamId = userData.team_id
+ 67 │     }
+    ╰────
+
+  × cannot reassign to a variable declared with `const`
+    ╭─[D:\Downloads\Startup_Draft\app\api\team-change-request\route.ts:14:1]
+ 14 │       requestType, 
+ 15 │       message,
+ 16 │       userDetails,
+ 17 │       teamDetails 
+    ·       ─────┬─────
+    ·            ╰── const variable was declared here
+ 18 │     } = body
+ 19 │ 
+ 20 │     // Validate required fields
+ 21 │     if (!userId || !requestType || !message) {
+ 22 │       return NextResponse.json(
+ 23 │         { error: 'Missing required fields: userId, requestType, message' },
+ 24 │         { status: 400 }
+ 25 │       )
+ 26 │     }
+ 27 │ 
+ 28 │     // Validate request type
+ 29 │     const validRequestTypes = ['leave_team', 'switch_team', 'dissolve_team']
+ 30 │     if (!validRequestTypes.includes(requestType)) {
+ 31 │       return NextResponse.json(
+ 32 │         { error: 'Invalid request type. Must be: leave_team, switch_team, or dissolve_team' },
+ 33 │         { status: 400 }
+ 34 │       )
+ 35 │     }
+ 36 │ 
+ 37 │     // Validate message length
+ 38 │     if (message.length < 10 || message.length > 1000) {
+ 39 │       return NextResponse.json(
+ 40 │         { error: 'Message must be between 10 and 1000 characters' },
+ 41 │         { status: 400 }
+ 42 │       )
+ 43 │     }
+ 44 │ 
+ 45 │     // Get user and team details for context
+ 46 │     let userTeamId = teamId
+ 47 │     let userDetails = null
+ 48 │     let teamDetails = null
+ 49 │     
+ 50 │     // Get user details
+ 51 │     const { data: userData, error: userError } = await supabaseAdmin
+ 52 │       .from('profiles')
+ 53 │       .select('team_id, full_name, email, college')
+ 54 │       .eq('id', userId)
+ 55 │       .single()
+ 56 │     
+ 57 │     if (userError) {
+ 58 │       return NextResponse.json(
+ 59 │         { error: 'User not found' },
+ 60 │         { status: 400 }
+ 61 │       )
+ 62 │     }
+ 63 │     
+ 64 │     userDetails = userData
+ 65 │     if (!userTeamId) {
+ 66 │       userTeamId = userData.team_id
+ 67 │     }
+ 68 │     
+ 69 │     if (!userTeamId) {
+ 70 │       return NextResponse.json(
+ 71 │         { error: 'User team not found. Please ensure you are part of a team.' },
+ 72 │         { status: 400 }
+ 73 │       )
+ 74 │     }
+ 75 │     
+ 76 │     // Get team details
+ 77 │     const { data: teamData, error: teamError } = await supabaseAdmin
+ 78 │       .from('teams')
+ 79 │       .select('name, member_count')
+ 80 │       .eq('id', userTeamId)
+ 81 │       .single()
+ 82 │     
+ 83 │     if (!teamError && teamData) {
+ 84 │       teamDetails = teamData
+    ·       ─────┬─────
+    ·            ╰── cannot reassign
+ 85 │     }
+ 86 │ 
+ 87 │     // Insert team change request
+    ╰────
+
+  × the name `userDetails` is defined multiple times
+    ╭─[D:\Downloads\Startup_Draft\app\api\team-change-request\route.ts:13:1]
+ 13 │       teamId, 
+ 14 │       requestType, 
+ 15 │       message,
+ 16 │       userDetails,
+    ·       ─────┬─────
+    ·            ╰── previous definition of `userDetails` here
+ 17 │       teamDetails 
+ 18 │     } = body
+ 19 │ 
+ 20 │     // Validate required fields
+ 21 │     if (!userId || !requestType || !message) {
+ 22 │       return NextResponse.json(
+ 23 │         { error: 'Missing required fields: userId, requestType, message' },
+ 24 │         { status: 400 }
+ 25 │       )
+ 26 │     }
+ 27 │ 
+ 28 │     // Validate request type
+ 29 │     const validRequestTypes = ['leave_team', 'switch_team', 'dissolve_team']
+ 30 │     if (!validRequestTypes.includes(requestType)) {
+ 31 │       return NextResponse.json(
+ 32 │         { error: 'Invalid request type. Must be: leave_team, switch_team, or dissolve_team' },
+ 33 │         { status: 400 }
+ 34 │       )
+ 35 │     }
+ 36 │ 
+ 37 │     // Validate message length
+ 38 │     if (message.length < 10 || message.length > 1000) {
+ 39 │       return NextResponse.json(
+ 40 │         { error: 'Message must be between 10 and 1000 characters' },
+ 41 │         { status: 400 }
+ 42 │       )
+ 43 │     }
+ 44 │ 
+ 45 │     // Get user and team details for context
+ 46 │     let userTeamId = teamId
+ 47 │     let userDetails = null
+    ·         ─────┬─────
+    ·              ╰── `userDetails` redefined here
+ 48 │     let teamDetails = null
+ 49 │     
+ 50 │     // Get user details
+    ╰────
+
+  × the name `teamDetails` is defined multiple times
+    ╭─[D:\Downloads\Startup_Draft\app\api\team-change-request\route.ts:14:1]
+ 14 │       requestType, 
+ 15 │       message,
+ 16 │       userDetails,
+ 17 │       teamDetails 
+    ·       ─────┬─────
+    ·            ╰── previous definition of `teamDetails` here
+ 18 │     } = body
+ 19 │ 
+ 20 │     // Validate required fields
+ 21 │     if (!userId || !requestType || !message) {
+ 22 │       return NextResponse.json(
+ 23 │         { error: 'Missing required fields: userId, requestType, message' },
+ 24 │         { status: 400 }
+ 25 │       )
+ 26 │     }
+ 27 │ 
+ 28 │     // Validate request type
+ 29 │     const validRequestTypes = ['leave_team', 'switch_team', 'dissolve_team']
+ 30 │     if (!validRequestTypes.includes(requestType)) {
+ 31 │       return NextResponse.json(
+ 32 │         { error: 'Invalid request type. Must be: leave_team, switch_team, or dissolve_team' },
+ 33 │         { status: 400 }
+ 34 │       )
+ 35 │     }
+ 36 │ 
+ 37 │     // Validate message length
+ 38 │     if (message.length < 10 || message.length > 1000) {
+ 39 │       return NextResponse.json(
+ 40 │         { error: 'Message must be between 10 and 1000 characters' },
+ 41 │         { status: 400 }
+ 42 │       )
+ 43 │     }
+ 44 │ 
+ 45 │     // Get user and team details for context
+ 46 │     let userTeamId = teamId
+ 47 │     let userDetails = null
+ 48 │     let teamDetails = null
+    ·         ─────┬─────
+    ·              ╰── `teamDetails` redefined here
+ 49 │     
+ 50 │     // Get user details
+ 51 │     const { data: userData, error: userError } = await supabaseAdmin

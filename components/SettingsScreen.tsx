@@ -18,13 +18,16 @@ export default function SettingsScreen({
   setIsReportModalOpen,
 }: SettingsScreenProps) {
   const [teamName, setTeamName] = useState(teamData?.team?.name || teamData?.name || "Team Name")
-  const [teamDescription, setTeamDescription] = useState("")
+  const [teamDescription, setTeamDescription] = useState(teamData?.team?.bio || teamData?.bio || "")
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
-  const [requestMessage, setRequestMessage] = useState("")
+  const [requestReason, setRequestReason] = useState("")
+  const [requestDetails, setRequestDetails] = useState("")
   const [reportMessage, setReportMessage] = useState("")
   const [showSuccessMessage, setShowSuccessMessage] = useState("")
   const [selectedMember, setSelectedMember] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   
   // Show loading state if user authentication is still being determined
   if (!currentUser) {
@@ -66,25 +69,149 @@ export default function SettingsScreen({
     setShowReportModal(true)
   }
 
-  const handleSubmitRequest = () => {
-    setShowRequestModal(false)
-    setRequestMessage("")
-    setShowSuccessMessage("Your ticket is raised")
-    setTimeout(() => setShowSuccessMessage(""), 3000)
+  const handleSubmitRequest = async () => {
+    if (!requestReason.trim()) {
+      setError("Please enter a reason for your request")
+      return
+    }
+
+    if (requestReason.length < 10 || requestReason.length > 500) {
+      setError("Reason must be between 10 and 500 characters")
+      return
+    }
+
+    if (requestDetails && requestDetails.length > 2000) {
+      setError("Details must not exceed 2000 characters")
+      return
+    }
+
+    try {
+      const response = await fetch('/api/team-change-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          teamId: teamData?.id || teamData?.team?.id,
+          requestType: 'leave_team', // Default type, could be made dynamic
+          reason: requestReason.trim(),
+          details: requestDetails.trim() || null
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit request')
+      }
+
+      setShowRequestModal(false)
+      setRequestReason("")
+      setRequestDetails("")
+      setError("")
+      setShowSuccessMessage("Your team change request has been submitted successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error submitting request:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit request')
+    }
   }
 
-  const handleSubmitReport = () => {
-    setShowReportModal(false)
-    setReportMessage("")
-    setShowSuccessMessage("Your ticket is raised")
-    setTimeout(() => setShowSuccessMessage(""), 3000)
+  const handleSubmitReport = async () => {
+    if (!reportMessage.trim()) {
+      setError("Please enter an issue description")
+      return
+    }
+
+    if (reportMessage.length < 10 || reportMessage.length > 2000) {
+      setError("Issue description must be between 10 and 2000 characters")
+      return
+    }
+
+    try {
+      const response = await fetch('/api/issue-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          teamId: teamData?.id || teamData?.team?.id,
+          reportType: 'bug',
+          description: reportMessage.trim(),
+          priority: 'medium'
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit report')
+      }
+
+      setShowReportModal(false)
+      setReportMessage("")
+      setError("")
+      setShowSuccessMessage("Your issue report has been submitted successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error submitting report:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit report')
+    }
   }
 
-  const handleSaveChanges = () => {
-    // Here you would typically make an API call to save the changes
-    console.log("[v0] Saving team settings:", { teamName, teamDescription })
-    setShowSuccessMessage("Team settings saved successfully!")
-    setTimeout(() => setShowSuccessMessage(""), 3000)
+  const handleSaveChanges = async () => {
+    if (!teamData?.id && !teamData?.team?.id) {
+      setError("Team ID not found")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const teamId = teamData?.id || teamData?.team?.id
+      const requestBody: any = { teamId }
+      
+      // Only include fields that have changed
+      if (teamName.trim() !== (teamData?.team?.name || teamData?.name || "Team Name")) {
+        requestBody.teamName = teamName.trim()
+      }
+      
+      if (teamDescription.trim() !== (teamData?.team?.bio || teamData?.bio || "")) {
+        requestBody.bio = teamDescription.trim()
+      }
+      
+      // If no changes, don't make API call
+      if (Object.keys(requestBody).length === 1) {
+        setShowSuccessMessage("No changes to save!")
+        setTimeout(() => setShowSuccessMessage(""), 3000)
+        return
+      }
+
+      const response = await fetch('/api/team/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update team')
+      }
+
+      setShowSuccessMessage("Team updated successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error updating team:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update team')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Transform real team data to match the expected format
@@ -93,7 +220,7 @@ export default function SettingsScreen({
     return {
       id: member.id || index + 1,
       name: submission.full_name || member.name || 'Unknown Member',
-      avatar: member.avatarUrl || `/placeholder.svg?height=40&width=40&text=${(submission.full_name || member.name || 'U').charAt(0)}`,
+      avatar: "/placeholder.svg?height=48&width=48", // Use same placeholder as dashboard
       university: submission.college_name || member.college || 'Unknown University',
       role: member.role_in_team || (submission.preferred_roles && submission.preferred_roles[0]) || 'Member',
       isLead: member.role_in_team === 'Team Lead' || member.isLeader || false,
@@ -114,6 +241,18 @@ export default function SettingsScreen({
           </div>
         )}
 
+        {error && (
+          <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg z-50">
+            <p className="text-sm">{error}</p>
+            <button 
+              onClick={() => setError("")} 
+              className="ml-2 text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -123,9 +262,13 @@ export default function SettingsScreen({
             {/* Updated button to include save changes handler */}
             <button
               onClick={handleSaveChanges}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isLoading}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Save Changes
+              {isLoading && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -145,14 +288,16 @@ export default function SettingsScreen({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team Bio</label>
               <textarea
                 value={teamDescription}
                 onChange={(e) => setTeamDescription(e.target.value)}
-                placeholder="Describe your team's mission and goals..."
+                placeholder="Describe your team's mission, goals, and what makes you unique..."
                 rows={4}
+                maxLength={1000}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
+              <p className="text-sm text-gray-500 mt-1">{teamDescription.length}/1000 characters</p>
             </div>
           </div>
         </div>
@@ -252,12 +397,28 @@ export default function SettingsScreen({
                   <X size={20} />
                 </button>
               </div>
-              <textarea
-                value={requestMessage}
-                onChange={(e) => setRequestMessage(e.target.value)}
-                placeholder="Type your request here..."
-                className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Request *</label>
+                  <textarea
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                    placeholder="Brief reason for your team change request (10-500 characters)..."
+                    className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{requestReason.length}/500 characters</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (Optional)</label>
+                  <textarea
+                    value={requestDetails}
+                    onChange={(e) => setRequestDetails(e.target.value)}
+                    placeholder="Any additional details or context (max 2000 characters)..."
+                    className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{requestDetails.length}/2000 characters</p>
+                </div>
+              </div>
               <div className="flex justify-end space-x-3 mt-4">
                 <button
                   onClick={handleSubmitRequest}

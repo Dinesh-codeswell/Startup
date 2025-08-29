@@ -196,7 +196,7 @@ export const AdminErrorPresets = {
     message: 'You need to sign in to access admin features.',
     details: 'Admin access requires authentication with an authorized account.',
     action: 'login',
-    actionUrl: `/login${returnUrl ? `?returnTo=${encodeURIComponent(returnUrl)}` : ''}`
+    actionUrl: '/login'
   }),
 
   notAuthorized: (userEmail?: string): AdminError => ({
@@ -214,7 +214,7 @@ export const AdminErrorPresets = {
     message: 'Your session has expired. Please sign in again.',
     details: 'For security reasons, admin sessions expire after a period of inactivity.',
     action: 'login',
-    actionUrl: `/login${returnUrl ? `?returnTo=${encodeURIComponent(returnUrl)}` : ''}`
+    actionUrl: '/login'
   }),
 
   networkError: (): AdminError => ({

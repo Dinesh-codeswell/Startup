@@ -32,7 +32,7 @@ export default function TeamDashboardPage() {
         }
       } else if (!authLoading && !user) {
         // Redirect to login if not authenticated
-        router.push('/login?returnTo=/team/dashboard')
+        router.push('/login')
       }
     }
     

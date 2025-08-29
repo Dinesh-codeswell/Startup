@@ -8,6 +8,7 @@ import { Eye, FileText, Folder, BarChart3 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context" // Standard import
+import { useResourcesCache, CachedResourceViews } from "@/lib/resources-cache"
 
 /* Map resource.type -> icon */
 const getIcon = (type: string) => {
@@ -31,36 +32,46 @@ const topResources = resources.filter((r) => r.isFeatured).slice(0, 3)
 
 export default function ResourcesContent() {
   const [isVisible, setIsVisible] = useState(false)
-  const [viewsMap, setViewsMap] = useState<{ [id: number]: number }>({})
+  const [viewsMap, setViewsMap] = useState<CachedResourceViews>({})
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth() // Destructure user and loading from useAuth
+  const resourcesCache = useResourcesCache()
 
-  // Increment view for each resource ONLY when the resources page is loaded
+  // Load cached views data or fetch fresh data
   useEffect(() => {
-    resources.forEach(async (resource) => {
-      await fetch(`/api/resources/${resource.id}/views`, { method: "POST" })
-    })
-  }, [])
-
-  // Fetch view counts for all resources
-  useEffect(() => {
-    async function fetchViews() {
-      const results: { [id: number]: number } = {}
-      await Promise.all(
-        resources.map(async (resource) => {
-          try {
-            const res = await fetch(`/api/resources/${resource.id}/views`, { method: "GET" })
-
-            const data = await res.json()
-            results[resource.id] = data.viewCount || 2500
-          } catch {
-            results[resource.id] = 2500
-          }
-        }),
-      )
-      setViewsMap(results)
+    async function loadViews() {
+      setIsLoading(true)
+      
+      try {
+        // Get all resource IDs for the featured resources shown on homepage
+        const featuredResourceIds = topResources.map(r => r.id)
+        
+        // Get cached data or fetch fresh data
+        const viewsData = await resourcesCache.getResourceViews(featuredResourceIds)
+        setViewsMap(viewsData)
+        
+        // Start background refresh for these resources
+        resourcesCache.startBackgroundRefresh(featuredResourceIds)
+      } catch (error) {
+        console.error('Error loading resource views:', error)
+        // Set fallback values
+        const fallbackViews: CachedResourceViews = {}
+        topResources.forEach(resource => {
+          fallbackViews[resource.id] = 2500
+        })
+        setViewsMap(fallbackViews)
+      } finally {
+        setIsLoading(false)
+      }
     }
-    fetchViews()
+    
+    loadViews()
+    
+    // Cleanup: stop background refresh when component unmounts
+    return () => {
+      resourcesCache.stopBackgroundRefresh()
+    }
   }, [])
 
   useEffect(() => {
@@ -124,7 +135,7 @@ export default function ResourcesContent() {
                 {/* Views & type */}
                 <div className="mb-4 flex items-center justify-between text-sm text-gray-500">
                   <span className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" /> {viewsMap[resource.id] || 0} Views
+                    <Eye className="h-4 w-4" /> {isLoading ? '...' : (viewsMap[resource.id] || 2500).toLocaleString()} Views
                   </span>
                   <Badge variant="outline" className="text-xs capitalize ml-auto">
                     {resource.type}

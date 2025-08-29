@@ -213,10 +213,6 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* DEBUG: Visible indicator that ChatScreen main content is rendering */}
-      <div className="bg-green-500 text-white p-2 text-center font-bold">
-        🚀 ChatScreen MAIN CONTENT - Messages: {chatMessages.length}, Team: {teamData?.team?.name || 'Unknown'}
-      </div>
       <div className="px-6 py-4 border-b bg-white border-r border-slate-400 border-l-0 border-t-0 rounded">
         <h2 className="text-xl font-semibold text-gray-900">Team Chat</h2>
         <p className="text-sm text-gray-500 mt-1">4 members • 3 unread messages</p>

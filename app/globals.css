@@ -9,6 +9,23 @@ body {
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+/* Ensure page always starts at top */
+html {
+  scroll-behavior: auto !important;
+}
+
+/* Prevent scroll restoration */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Reset scroll position on page load */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

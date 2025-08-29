@@ -36,27 +36,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
   
-  // If no code but no error, this might be a successful OAuth with tokens in hash
-  // Check if this is a successful OAuth callback without code (implicit flow)
+  // If no code but no error, redirect to homepage
   if (!code) {
-    console.log('No authorization code - checking if this is implicit flow or successful auth')
-    
-    // Check if there are OAuth success indicators in the URL
-    const accessToken = requestUrl.searchParams.get('access_token')
-    const refreshToken = requestUrl.searchParams.get('refresh_token')
-    
-    if (accessToken || refreshToken) {
-      console.log('OAuth tokens found in URL parameters, redirecting to handle client-side')
-      // Redirect to a client-side handler that can process the tokens
-      const clientHandlerUrl = new URL('/', requestUrl.origin)
-      clientHandlerUrl.searchParams.set('auth_callback', 'true')
-      if (redirectTo) {
-        clientHandlerUrl.searchParams.set('redirect_to', redirectTo)
-      }
-      return NextResponse.redirect(clientHandlerUrl)
-    }
-    
-    console.log('No authorization code and no tokens, redirecting to homepage')
+    console.log('No authorization code, redirecting to homepage')
     return NextResponse.redirect(new URL('/', requestUrl.origin))
   }
 
@@ -176,11 +158,8 @@ export async function GET(request: NextRequest) {
     
     console.log('Redirecting authenticated user to:', finalRedirectUrl)
     
-    // Add success indicator to URL for client-side handling
-    const successUrl = new URL(finalRedirectUrl, requestUrl.origin)
-    successUrl.searchParams.set('auth_success', 'true')
-    
-    return NextResponse.redirect(successUrl)
+    // Clean redirect without additional parameters to prevent URL hash issues
+    return NextResponse.redirect(new URL(finalRedirectUrl, requestUrl.origin))
     
   } catch (error) {
     console.error('Unexpected error in auth callback:', error)

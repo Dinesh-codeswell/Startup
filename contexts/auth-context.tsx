@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
+import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
 import { ensureUserProfile } from "@/lib/profile-utils"
-import { useSessionSync, broadcastSessionEvent } from "@/lib/session-sync"
 import type { Profile } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -23,40 +23,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
+  const supabase = createClient()
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      // First try to get existing profile
-      let profileData = await getProfile(user.id)
-      
-      // If no profile exists, try to create one (especially for OAuth users)
-      if (!profileData) {
-        console.log('No profile found for user, attempting to create one:', user.email)
-        profileData = await ensureUserProfile(user)
+      try {
+        // First try to get existing profile
+        let profileData = await getProfile(user.id)
+        
+        // If no profile exists, try to create one (especially for OAuth users)
+        if (!profileData) {
+          console.log('No profile found for user, attempting to create one:', user.email)
+          profileData = await ensureUserProfile(user)
+        }
+        
+        setProfile(profileData)
+      } catch (error) {
+        console.error('Error refreshing profile:', error)
       }
-      
-      setProfile(profileData)
+    } else {
+      setProfile(null)
     }
   }, [user])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-    // Broadcast signout to other tabs
-    broadcastSessionEvent('signout')
-  }, [supabase])
+    try {
+      // Clear local state immediately
+      setUser(null)
+      setProfile(null)
+      
+      // Sign out from Supabase (this will trigger auth state change)
+      await supabase.auth.signOut({ scope: 'global' })
+      
+      // Clear any remaining session data from localStorage
+      if (typeof window !== 'undefined') {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('sb-')) {
+            localStorage.removeItem(key)
+          }
+        })
+      }
+      
+      // Navigate to homepage without page reload
+      router.push('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Even if signOut fails, clear local state and redirect
+      setUser(null)
+      setProfile(null)
+      router.push('/')
+    }
+  }, [supabase, router])
 
   useEffect(() => {
-    // Get initial session with retry logic
+    let mounted = true
+
+    // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (!mounted) return
+        
         if (error) {
           console.error('Error getting initial session:', error)
-          // Retry after a short delay
-          setTimeout(() => getInitialSession(), 1000)
+          setLoading(false)
           return
         }
         
@@ -64,97 +97,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          const profile = await getProfile(session.user.id)
-          setProfile(profile)
+          try {
+            const profile = await getProfile(session.user.id)
+            if (mounted) {
+              setProfile(profile)
+            }
+          } catch (error) {
+            console.error('Error loading profile:', error)
+          }
+        } else {
+          setProfile(null)
         }
-        setLoading(false)
+        
+        if (mounted) {
+          setLoading(false)
+        }
       } catch (error) {
         console.error('Error in getInitialSession:', error)
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     getInitialSession()
 
-    // Simplified cross-tab synchronization
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.startsWith('sb-') && e.key.includes('auth-token')) {
-        console.log('Auth token changed in another tab, refreshing session')
-        getInitialSession()
-      }
-    }
-
-    // Listen for storage changes from other tabs
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleStorageChange)
-    }
-
-    // Session sync for cross-tab communication
-    const unsubscribeSessionSync = useSessionSync((event) => {
-      console.log('Session sync event received:', event)
-      
-      if (event === 'signout') {
-        setUser(null)
-        setProfile(null)
-        setLoading(false)
-      } else if (event === 'signin' || event === 'token_refresh') {
-        // Refresh session when signin/refresh detected in another tab
-        getInitialSession()
-      }
-    })
-
-    // Listen for auth changes with enhanced handling
+    // Listen for auth state changes (simplified)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+      
       console.log("Auth state change:", event, session?.user?.id)
 
-      // Update state immediately
+      // Handle explicit sign out events
+      if (event === 'SIGNED_OUT') {
+        console.log('User signed out, clearing all state')
+        setUser(null)
+        setProfile(null)
+        if (mounted) {
+          setLoading(false)
+        }
+        return
+      }
+
+      // Update user state
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        // Broadcast signin to other tabs for new sessions
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          broadcastSessionEvent('signin')
-        }
-        
-        // Refresh profile
+        // Load profile for authenticated user
         try {
           const profile = await getProfile(session.user.id)
-          setProfile(profile)
+          if (mounted) {
+            setProfile(profile)
+          }
         } catch (error) {
-          console.error('Error refreshing profile on auth change:', error)
+          console.error('Error loading profile on auth change:', error)
         }
       } else {
+        // Clear profile for unauthenticated state
         setProfile(null)
       }
-      setLoading(false)
+      
+      if (mounted) {
+        setLoading(false)
+      }
     })
 
-    // Note: Auth success handling is now managed by AuthStateHandler component
-    // to prevent duplicate processing and race conditions
-
     return () => {
+      mounted = false
       subscription.unsubscribe()
-      unsubscribeSessionSync()
-      // Clean up storage event listener
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage', handleStorageChange)
-      }
     }
   }, [])
 
-  // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
-    user,
-    profile,
-    loading,
-    signOut,
-    refreshProfile
-  }), [user, profile, loading, signOut, refreshProfile])
-
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{
+      user,
+      profile,
+      loading,
+      signOut,
+      refreshProfile
+    }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 

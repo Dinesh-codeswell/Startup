@@ -106,11 +106,11 @@ export default function SignupPage() {
           setError(result.error.message || "Account creation failed. Please try again.")
         }
       } else if (result.user) {
-        setSuccess("Account created successfully! Please sign in to continue.")
-        // Redirect to sign-in page after showing success message
+        setSuccess("Account created successfully! Redirecting to homepage...")
+        // Redirect to homepage after showing success message
         setTimeout(() => {
-          router.push("/login")
-        }, 2000)
+          router.push("/")
+        }, 1500)
       } else {
         setError("Account creation failed. Please try again.")
       }
@@ -135,17 +135,13 @@ export default function SignupPage() {
     setError("")
 
     try {
-      // Construct the callback URL to redirect to home page after signup
-      const callbackUrl = new URL('/auth/callback', window.location.origin)
-      callbackUrl.searchParams.set('redirect_to', '/')
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: callbackUrl.toString(),
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           }
         },
       })

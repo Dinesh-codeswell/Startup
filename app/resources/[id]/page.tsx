@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useResourcesCache } from "@/lib/resources-cache"
 
 interface PageProps {
   params: { id: string }
@@ -15,22 +16,36 @@ export default function ResourceDetailPage({ params }: PageProps) {
   const resourceId = Number(params.id)
   const resource = resources.find((r) => r.id === resourceId)
   const [viewCount, setViewCount] = useState<number>(2500)
+  const [isLoading, setIsLoading] = useState(true)
+  const resourcesCache = useResourcesCache()
 
   useEffect(() => {
-    async function incrementAndFetchViews() {
+    async function handleResourceView() {
+      setIsLoading(true)
+      
       try {
-        // Increment the view count
+        // First, get cached view count to show immediately
+        const cachedViews = resourcesCache.getCachedViews()
+        if (cachedViews && cachedViews[resourceId]) {
+          setViewCount(cachedViews[resourceId])
+        }
+        
+        // Increment the view count (this still needs to happen for individual page visits)
         await fetch(`/api/resources/${resourceId}/views`, { method: "POST" })
-        // Fetch the updated view count
-        const res = await fetch(`/api/resources/${resourceId}/views`, { method: "GET" })
-        const data = await res.json()
-        setViewCount(data.viewCount || 2500)
-      } catch {
+        
+        // Force refresh the cache for this resource to get the updated count
+        const updatedViews = await resourcesCache.forceRefresh([resourceId])
+        setViewCount(updatedViews[resourceId] || 2500)
+      } catch (error) {
+        console.error('Error handling resource view:', error)
         setViewCount(2500)
+      } finally {
+        setIsLoading(false)
       }
     }
-    incrementAndFetchViews()
-  }, [resourceId])
+    
+    handleResourceView()
+  }, [resourceId, resourcesCache])
 
   if (!resource) {
     notFound()
@@ -46,7 +61,7 @@ export default function ResourceDetailPage({ params }: PageProps) {
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-1">
             <Eye className="h-4 w-4" />
-            {viewCount.toLocaleString()} views
+            {isLoading ? '...' : viewCount.toLocaleString()} views
           </div>
           <Badge variant="outline" className="capitalize">
             {resource.type}

@@ -75,8 +75,7 @@ export function useAdminPermissions() {
   // Get redirect URL for unauthorized users
   const getRedirectUrl = useCallback((returnTo?: string) => {
     if (isUnauthenticated) {
-      const loginUrl = '/login'
-      return returnTo ? `${loginUrl}?returnTo=${encodeURIComponent(returnTo)}` : loginUrl
+      return '/login'
     }
     
     if (isAuthenticatedNonAdmin) {

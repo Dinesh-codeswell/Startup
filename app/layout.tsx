@@ -10,6 +10,7 @@ import ErrorBoundary from "@/components/ErrorBoundary"
 import { Suspense } from "react"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 
+
 // Runtime configuration removed to fix Edge Runtime build errors
 
 const inter = Inter({ 
@@ -61,6 +62,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <AdminProvider>
+      
               <Suspense fallback={<LoadingFallback />}>
                 <AuthStateHandler />
                 {children}

@@ -62,9 +62,6 @@ function shouldProtectRoute(pathname: string): boolean {
  */
 function createUnauthenticatedRedirect(request: NextRequest): NextResponse {
   const loginUrl = new URL('/login', request.url)
-  // Add return URL so user can be redirected back after login
-  const returnTo = request.nextUrl.pathname + request.nextUrl.search
-  loginUrl.searchParams.set('returnTo', returnTo)
   
   // Add helpful query parameters for better UX
   loginUrl.searchParams.set('reason', 'admin_required')
@@ -108,8 +105,6 @@ function createUnauthorizedResponse(request: NextRequest, userEmail?: string): N
   
   // For page routes, redirect to unauthorized page with context
   const unauthorizedUrl = new URL('/admin/unauthorized', request.url)
-  const returnTo = request.nextUrl.pathname + request.nextUrl.search
-  unauthorizedUrl.searchParams.set('returnTo', returnTo)
   
   if (userEmail) {
     unauthorizedUrl.searchParams.set('email', userEmail)

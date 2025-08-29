@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronRight, Trash2, X, Users, AlertTriangle } from "lucide-react"
+import { ChevronRight, Trash2, X, Users, AlertTriangle, Edit2, Save, XCircle } from "lucide-react"
 import Avatar from "./Avatar"
 
 interface SettingsScreenProps {
@@ -19,6 +19,10 @@ export default function SettingsScreen({
 }: SettingsScreenProps) {
   const [teamName, setTeamName] = useState(teamData?.team?.name || teamData?.name || "Team Name")
   const [teamDescription, setTeamDescription] = useState(teamData?.team?.bio || teamData?.bio || "")
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [isEditingBio, setIsEditingBio] = useState(false)
+  const [originalTeamName, setOriginalTeamName] = useState(teamData?.team?.name || teamData?.name || "Team Name")
+  const [originalTeamDescription, setOriginalTeamDescription] = useState(teamData?.team?.bio || teamData?.bio || "")
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [requestReason, setRequestReason] = useState("")
@@ -214,6 +218,103 @@ export default function SettingsScreen({
     }
   }
 
+  const handleEditName = () => {
+    setOriginalTeamName(teamName)
+    setIsEditingName(true)
+  }
+
+  const handleSaveName = async () => {
+    if (!teamName.trim()) {
+      setError("Team name cannot be empty")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const teamId = teamData?.id || teamData?.team?.id
+      const response = await fetch('/api/team/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId,
+          teamName: teamName.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update team name')
+      }
+
+      setOriginalTeamName(teamName)
+      setIsEditingName(false)
+      setShowSuccessMessage("Team name updated successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error updating team name:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update team name')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCancelNameEdit = () => {
+    setTeamName(originalTeamName)
+    setIsEditingName(false)
+    setError("")
+  }
+
+  const handleEditBio = () => {
+    setOriginalTeamDescription(teamDescription)
+    setIsEditingBio(true)
+  }
+
+  const handleSaveBio = async () => {
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const teamId = teamData?.id || teamData?.team?.id
+      const response = await fetch('/api/team/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId,
+          bio: teamDescription.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update team bio')
+      }
+
+      setOriginalTeamDescription(teamDescription)
+      setIsEditingBio(false)
+      setShowSuccessMessage("Team bio updated successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error updating team bio:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update team bio')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCancelBioEdit = () => {
+    setTeamDescription(originalTeamDescription)
+    setIsEditingBio(false)
+    setError("")
+  }
+
   // Transform real team data to match the expected format
   const teamMembers = teamData?.members ? teamData.members.map((member, index) => {
     const submission = member.team_matching_submissions || member.submission || {}
@@ -278,26 +379,102 @@ export default function SettingsScreen({
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-              <input
-                type="text"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Team Name</label>
+                {!isEditingName ? (
+                  <button
+                    onClick={handleEditName}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Edit team name"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleSaveName}
+                      disabled={isLoading}
+                      className="p-1 text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
+                      title="Save changes"
+                    >
+                      <Save size={16} />
+                    </button>
+                    <button
+                      onClick={handleCancelNameEdit}
+                      disabled={isLoading}
+                      className="p-1 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                      title="Cancel editing"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              ) : (
+                <div className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
+                  {teamName || 'No team name set'}
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team Bio</label>
-              <textarea
-                value={teamDescription}
-                onChange={(e) => setTeamDescription(e.target.value)}
-                placeholder="Describe your team's mission, goals, and what makes you unique..."
-                rows={4}
-                maxLength={1000}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <p className="text-sm text-gray-500 mt-1">{teamDescription.length}/1000 characters</p>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Team Bio</label>
+                {!isEditingBio ? (
+                  <button
+                    onClick={handleEditBio}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Edit team bio"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleSaveBio}
+                      disabled={isLoading}
+                      className="p-1 text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
+                      title="Save changes"
+                    >
+                      <Save size={16} />
+                    </button>
+                    <button
+                      onClick={handleCancelBioEdit}
+                      disabled={isLoading}
+                      className="p-1 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                      title="Cancel editing"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {isEditingBio ? (
+                <div>
+                  <textarea
+                    value={teamDescription}
+                    onChange={(e) => setTeamDescription(e.target.value)}
+                    placeholder="Describe your team's mission, goals, and what makes you unique..."
+                    rows={4}
+                    maxLength={1000}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    autoFocus
+                  />
+                  <p className="text-sm text-gray-500 mt-1">{teamDescription.length}/1000 characters</p>
+                </div>
+              ) : (
+                <div className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-900 min-h-[100px]">
+                  {teamDescription || 'No team bio set'}
+                </div>
+              )}
             </div>
           </div>
         </div>

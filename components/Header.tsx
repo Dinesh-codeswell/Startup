@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, memo } from "react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useAdmin } from "@/contexts/admin-context"
+import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ const Header = () => {
 
   const auth = useAuth() // Use the useAuth hook for proper error handling
   const { isAdmin, isLoading: adminLoading } = useAdmin() // Get admin status
+  const router = useRouter()
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -37,8 +39,8 @@ const Header = () => {
     e.preventDefault()
     
     if (!auth?.user) {
-      // Redirect to login with return URL
-      window.location.href = '/login?returnTo=' + encodeURIComponent('/team')
+      // Redirect to login page
+      router.push('/login')
     } else {
       // User is signed in, check their status to determine redirect
       try {
@@ -48,22 +50,22 @@ const Header = () => {
         if (data.success) {
           // If user has submitted questionnaire (with or without team), go to team dashboard
           if (data.data.hasSubmitted) {
-            window.location.href = '/team/dashboard'
+            router.push('/team/dashboard')
           } else {
             // If user hasn't submitted, go to team page (shows questionnaire)
-            window.location.href = '/team'
+            router.push('/team')
           }
         } else {
           // Fallback: go to team page
-          window.location.href = '/team'
+          router.push('/team')
         }
       } catch (error) {
         console.error('Error checking user status:', error)
         // Fallback: go to team page
-        window.location.href = '/team'
+        router.push('/team')
       }
     }
-  }, [auth?.user])
+  }, [auth?.user, router])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -125,7 +127,7 @@ const Header = () => {
     )
   }
 
-  const { user, profile, signOut } = auth // Destructure from the context value
+  const { user, profile, signOut, loading } = auth // Destructure from the context value
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -183,7 +185,13 @@ const Header = () => {
 
           {/* Desktop Auth Section */}
           <div className="hidden lg:flex items-center space-x-3 flex-shrink-0 relative">
-            {user ? (
+            {loading ? (
+              // Show loading state to prevent flickering
+              <div className="flex items-center space-x-3">
+                <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+                <div className="w-24 h-8 bg-gray-200 animate-pulse rounded"></div>
+              </div>
+            ) : user ? (
               <div className="relative">
                 <Button
                   variant="outline"
@@ -317,7 +325,13 @@ const Header = () => {
               Find a Team
             </button>
             <div className="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-              {user ? (
+              {loading ? (
+                // Show loading state to prevent flickering
+                <div className="flex flex-col space-y-3">
+                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
+                  <div className="w-full h-12 bg-gray-200 animate-pulse rounded"></div>
+                </div>
+              ) : user ? (
                 <>
                   <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button

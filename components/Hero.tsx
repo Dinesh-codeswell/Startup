@@ -8,15 +8,7 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { Briefcase, GraduationCap, BookOpen, Target, Map } from "lucide-react"
 
-// Safely import useAuth with error handling
-let useAuth: any
-try {
-  const authModule = require("@/contexts/auth-context")
-  useAuth = authModule.useAuth
-} catch (error) {
-  console.warn("Auth context not available:", error)
-  useAuth = () => ({ user: null, loading: false })
-}
+import { useAuth } from "@/contexts/auth-context"
 
 // Pre-optimized Spline component - no loading state
 const DynamicSplineScene = dynamic(() => import("./spline-scene"), {
@@ -24,18 +16,10 @@ const DynamicSplineScene = dynamic(() => import("./spline-scene"), {
 })
 
 const Hero = () => {
-  const [user, setUser] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
-  const authContext = useAuth()
-
-  // Memoize auth state to prevent re-renders
-  const authState = useMemo(() => ({
-    user: authContext?.user || null,
-    loading: authContext?.loading || false
-  }), [authContext?.user, authContext?.loading])
+  const { user, loading } = useAuth()
 
   useEffect(() => {
-    setUser(authState.user)
 
     // Check if device is mobile
     const checkMobile = () => {
@@ -94,11 +78,17 @@ const Hero = () => {
     return () => {
       window.removeEventListener('resize', checkMobile)
     }
-  }, [authState, isMobile])
+  }, [isMobile])
 
-  // Skip loading entirely
-  if (authState.loading) {
-    return null // Don't show loading spinner
+  // Show loading state briefly
+  if (loading) {
+    return (
+      <section className="relative flex items-center justify-center bg-gradient-to-br from-white via-[#F7F2EB]/30 to-[#BAD6EB]/20 py-8 lg:py-16 lg:min-h-screen overflow-hidden">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#334EAC] mx-auto"></div>
+        </div>
+      </section>
+    )
   }
 
   return (

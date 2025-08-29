@@ -12,6 +12,7 @@ import { Eye, EyeOff, Mail, Lock, User, GraduationCap, AlertCircle, CheckCircle 
 import Link from "next/link"
 import { signUp } from "@/lib/auth"
 import { useAuth } from "@/contexts/auth-context"
+import { useOAuthProgress } from "@/components/OAuthCallbackHandler"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 
@@ -32,6 +33,7 @@ export default function SignupPage() {
   const [logoError, setLogoError] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
+  const { markOAuthInProgress } = useOAuthProgress()
 
   // Redirect if already logged in
   useEffect(() => {
@@ -135,6 +137,9 @@ export default function SignupPage() {
     setError("")
 
     try {
+      // Mark OAuth as in progress before redirecting
+      markOAuthInProgress()
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {

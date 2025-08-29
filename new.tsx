@@ -256,7 +256,7 @@ const ROLE_PERMISSIONS = {
 
 // Main Dashboard Component
 const TeamDashboard = ({ userStatus }) => {
-  const [activeRoute, setActiveRoute] = useState("chat")
+  const [activeRoute, setActiveRoute] = useState("dashboard")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [teamData, setTeamData] = useState(null)
   const [loading, setLoading] = useState(true)

@@ -15,6 +15,7 @@ interface TeamChatWindowProps {
   teamId: string
   currentUserSubmissionId: string
   currentUserName: string
+  currentUserId?: string
   className?: string
 }
 
@@ -22,6 +23,7 @@ export function TeamChatWindow({
   teamId, 
   currentUserSubmissionId, 
   currentUserName,
+  currentUserId,
   className 
 }: TeamChatWindowProps) {
   const [messages, setMessages] = useState<TeamChatMessageWithSender[]>([])
@@ -30,7 +32,9 @@ export function TeamChatWindow({
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const [typingUsers, setTypingUsers] = useState<string[]>([])  
+  const [messageReactions, setMessageReactions] = useState<Record<string, any[]>>({})
+  const [readReceipts, setReadReceipts] = useState<Record<string, any[]>>({})
   const [error, setError] = useState<string | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -38,8 +42,59 @@ export function TeamChatWindow({
 
   useEffect(() => {
     loadChatData()
-    const interval = setInterval(loadMessages, 3000) // Poll for new messages every 3 seconds
-    return () => clearInterval(interval)
+    
+    // Set up Server-Sent Events for real-time updates
+    const eventSource = new EventSource(`/api/team-chat/events?team_id=${teamId}`)
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        switch (data.type) {
+          case 'new_message':
+            setMessages(prev => {
+              // Check if message already exists to avoid duplicates
+              const exists = prev.some(msg => msg.id === data.message.id)
+              if (!exists) {
+                return [...prev, data.message]
+              }
+              return prev
+            })
+            break
+            
+          case 'typing':
+            setTypingUsers(prev => {
+              if (data.isTyping) {
+                return prev.includes(data.userName) ? prev : [...prev, data.userName]
+              } else {
+                return prev.filter(user => user !== data.userName)
+              }
+            })
+            break
+            
+          case 'connected':
+            console.log('Connected to team chat events')
+            break
+            
+          case 'heartbeat':
+            // Keep connection alive
+            break
+        }
+      } catch (error) {
+        console.error('Error parsing SSE data:', error)
+      }
+    }
+    
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error)
+      // Fallback to polling if SSE fails
+      const interval = setInterval(loadMessages, 5000)
+      return () => clearInterval(interval)
+    }
+    
+    return () => {
+      eventSource.close()
+    }
   }, [teamId])
 
   useEffect(() => {
@@ -66,26 +121,84 @@ export function TeamChatWindow({
 
   const loadMessages = async () => {
     try {
-      const response = await fetch(`/api/team-chat/messages?team_id=${teamId}&limit=50`)
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+      
+      const response = await fetch(`/api/team-chat/messages?team_id=${teamId}&limit=50`, {
+        headers
+      })
       const data = await response.json()
+      
+      if (response.status === 401) {
+        setError('Authentication required. Please sign in to access team chat.')
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+        }, 2000)
+        return
+      }
+      
+      if (response.status === 403) {
+        setError('You are not authorized to access this team chat. Please contact your team administrator.')
+        return
+      }
       
       if (data.success) {
         setMessages(data.data.messages)
+        setError(null) // Clear any previous errors
         
         // Mark messages as read if there are new messages
         if (data.data.messages.length > 0) {
           const lastMessage = data.data.messages[data.data.messages.length - 1]
           markMessagesRead(lastMessage.id)
         }
+        
+        // Load reactions and read receipts for all messages
+        loadReactions()
+        loadReadReceipts()
+      } else {
+        setError(data.error || 'Failed to load messages')
       }
     } catch (error) {
       console.error('Error loading messages:', error)
+      setError('Network error. Please check your connection and try again.')
     }
   }
 
   const loadParticipants = async () => {
     try {
-      const response = await fetch(`/api/team-chat/participants?team_id=${teamId}`)
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+      
+      const response = await fetch(`/api/team-chat/participants?team_id=${teamId}`, {
+        headers
+      })
+      
+      if (response.status === 401) {
+        setError('Authentication required. Please sign in to access team chat.')
+        setTimeout(() => {
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+        }, 2000)
+        return
+      }
+      
+      if (response.status === 403) {
+        setError('You are not authorized to access this team chat.')
+        return
+      }
+      
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
@@ -106,7 +219,9 @@ export function TeamChatWindow({
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`/api/team-chat/stats?team_id=${teamId}`)
+      const response = await fetch(`/api/team-chat/stats?team_id=${teamId}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
@@ -145,6 +260,7 @@ export function TeamChatWindow({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           team_id: teamId,
           message_text: newMessage.trim(),
@@ -156,16 +272,7 @@ export function TeamChatWindow({
 
       if (data.success) {
         setNewMessage('')
-        // Add the new message to the list immediately for better UX
-        const newMsg: TeamChatMessageWithSender = {
-          ...data.data,
-          sender: {
-            id: currentUserSubmissionId,
-            full_name: currentUserName,
-            college_name: 'Your College'
-          }
-        }
-        setMessages(prev => [...prev, newMsg])
+        // Message will be added via SSE, no need to add locally
         
         // Stop typing indicator
         updateTypingIndicator(false)
@@ -187,6 +294,7 @@ export function TeamChatWindow({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           team_id: teamId,
           is_typing: isTyping
@@ -199,11 +307,18 @@ export function TeamChatWindow({
 
   const markMessagesRead = async (lastMessageId: string) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+      
       await fetch('/api/team-chat/read', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           team_id: teamId,
           last_message_id: lastMessageId
@@ -211,6 +326,73 @@ export function TeamChatWindow({
       })
     } catch (error) {
       console.error('Error marking messages as read:', error)
+    }
+  }
+
+  // Load reactions for messages
+  const loadReactions = async () => {
+    try {
+      const response = await fetch(`/api/team-chat/reactions?teamId=${teamId}`, {
+        credentials: 'include'
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessageReactions(data.data)
+      }
+    } catch (error) {
+      console.error('Error loading reactions:', error)
+    }
+  }
+
+  // Toggle reaction on a message
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    try {
+      const response = await fetch('/api/team-chat/reactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+           teamId,
+           messageId,
+           emoji
+         })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        // Reload reactions to get updated state
+        loadReactions()
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error)
+    }
+  }
+
+  // Show reaction picker (simple implementation)
+  const showReactionPicker = (messageId: string) => {
+    const emojis = ['👍', '❤️', '😂', '😮', '😢', '😡']
+    const emoji = prompt('Choose an emoji: ' + emojis.join(' '))
+    if (emoji && emojis.includes(emoji)) {
+      toggleReaction(messageId, emoji)
+    }
+  }
+
+  // Load read receipts for messages
+  const loadReadReceipts = async () => {
+    try {
+      const response = await fetch(`/api/team-chat/read?teamId=${teamId}`, {
+        credentials: 'include'
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setReadReceipts(data.data)
+      }
+    } catch (error) {
+      console.error('Error loading read receipts:', error)
     }
   }
 
@@ -434,7 +616,50 @@ export function TeamChatWindow({
                           {message.message_text}
                         </div>
                         
-                        {/* Reactions would go here */}
+                        {/* Message Reactions */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center space-x-2">
+                            {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {Object.entries(
+                                  messageReactions[message.id].reduce((acc, reaction) => {
+                                    const key = reaction.emoji
+                                    if (!acc[key]) acc[key] = []
+                                    acc[key].push(reaction)
+                                    return acc
+                                  }, {})
+                                ).map(([emoji, reactions]) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => toggleReaction(message.id, emoji)}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 hover:bg-gray-200 transition-colors"
+                                  >
+                                    <span className="mr-1">{emoji}</span>
+                                    <span>{reactions.length}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {message.message_type !== 'system' && (
+                              <button
+                                onClick={() => showReactionPicker(message.id)}
+                                className="text-gray-400 hover:text-gray-600 text-sm px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                                title="Add reaction"
+                              >
+                                😊+
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Read Receipts */}
+                          {message.sender_id !== currentUserSubmissionId && readReceipts[message.id] && readReceipts[message.id].length > 0 && (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <span className="mr-1">✓</span>
+                              <span>Read by {readReceipts[message.id].length}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

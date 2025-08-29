@@ -345,6 +345,7 @@ export default function TeamDashboardPage() {
                   teamId={userSubmission.team.id}
                   currentUserSubmissionId={userSubmission.id}
                   currentUserName={userSubmission.full_name}
+                  currentUserId={userSubmission.user_id}
                 />
               </GlassCard>
               

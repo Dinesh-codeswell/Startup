@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { AdminProvider } from "@/contexts/admin-context"
 import { AuthStateHandler } from "@/components/AuthStateHandler"
+import { OAuthCallbackHandler } from "@/components/OAuthCallbackHandler"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
 import ErrorBoundary from "@/components/ErrorBoundary"
 import { Suspense } from "react"
@@ -65,6 +66,7 @@ export default function RootLayout({
       
               <Suspense fallback={<LoadingFallback />}>
                 <AuthStateHandler />
+                <OAuthCallbackHandler />
                 {children}
               </Suspense>
             </AdminProvider>

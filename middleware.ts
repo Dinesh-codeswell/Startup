@@ -5,6 +5,22 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// Configure which routes the middleware should run on
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+
+// Authentication configuration
+
 // Admin configuration - matches the admin-utils.ts configuration
 const AUTHORIZED_ADMIN_EMAILS = [
   'dineshkatal.work@gmail.com',
@@ -114,27 +130,29 @@ function createUnauthorizedResponse(request: NextRequest, userEmail?: string): N
 }
 
 /**
- * Simplified middleware function to avoid build issues
+ * Middleware function with Supabase session refresh enabled
  */
 export default async function middleware(request: NextRequest) {
-  // Temporarily disable all middleware functionality to fix build issues
-  // This allows the website to function while we resolve the underlying problems
-  return NextResponse.next()
-}
-
-/**
- * Configure which routes the middleware should run on
- * Temporarily disabled to fix build issues
- */
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  try {
+    const { pathname } = request.nextUrl
+    
+    // Skip middleware authentication for team chat routes - let API routes handle their own auth
+    if (pathname.startsWith('/api/team-chat')) {
+      console.log('🔍 Processing team chat API request - delegating auth to API route')
+      
+      // Just update session and pass through to API route
+      const { updateSession } = await import('./lib/supabase-middleware')
+      const { response } = await updateSession(request)
+      return response
+    }
+    
+    // For non-team-chat routes, handle normal session updates
+    const { updateSession } = await import('./lib/supabase-middleware')
+    const { response } = await updateSession(request)
+    
+    return response
+  } catch (error) {
+    console.error('❌ Middleware error:', error)
+    return NextResponse.next()
+  }
 }

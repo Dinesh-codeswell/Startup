@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase-browser"
 import { getProfile } from "@/lib/auth"
 import { ensureUserProfile } from "@/lib/profile-utils"
 import type { Profile } from "@/lib/supabase"
+import { useCrossTabAuthSync } from "@/lib/cross-tab-auth-sync"
 
 interface AuthContextType {
   user: User | null
@@ -19,10 +20,11 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const { broadcastSignIn, broadcastSignOut, broadcastAuthChange, addListener } = useCrossTabAuthSync()
   const router = useRouter()
   const supabase = createClient()
 
@@ -56,6 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Sign out from Supabase (this will trigger auth state change)
       await supabase.auth.signOut({ scope: 'global' })
       
+      // Broadcast sign-out to other tabs
+      broadcastSignOut()
+      
       // Clear any remaining session data from localStorage
       if (typeof window !== 'undefined') {
         const keys = Object.keys(localStorage)
@@ -73,12 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if signOut fails, clear local state and redirect
       setUser(null)
       setProfile(null)
+      // Broadcast sign-out to other tabs even on error
+      broadcastSignOut()
       router.push('/')
     }
-  }, [supabase, router])
+  }, [supabase, router, broadcastSignOut])
 
   useEffect(() => {
     let mounted = true
+    let refreshInterval: NodeJS.Timeout | null = null
 
     // Get initial session
     const getInitialSession = async () => {
@@ -120,7 +128,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Check if we just came from OAuth callback
+    const checkForOAuthCallback = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search)
+        const hasOAuthParams = urlParams.has('code') || 
+                              window.location.hash.includes('access_token') ||
+                              document.referrer.includes('/auth/callback')
+        
+        if (hasOAuthParams) {
+          console.log('OAuth callback detected, setting up session refresh')
+          // Set up periodic session refresh for OAuth callbacks
+          refreshInterval = setInterval(async () => {
+            try {
+              const { data: { session } } = await supabase.auth.getSession()
+              if (session?.user && session.user.id !== user?.id) {
+                console.log('New session detected after OAuth, refreshing state')
+                setUser(session.user)
+                await refreshProfile()
+                if (refreshInterval) {
+                  clearInterval(refreshInterval)
+                  refreshInterval = null
+                }
+              }
+            } catch (error) {
+              console.error('Error in OAuth session refresh:', error)
+            }
+          }, 500) // Check every 500ms for 10 seconds
+          
+          // Clear interval after 10 seconds
+          setTimeout(() => {
+            if (refreshInterval) {
+              clearInterval(refreshInterval)
+              refreshInterval = null
+            }
+          }, 10000)
+        }
+      }
+    }
+
     getInitialSession()
+    checkForOAuthCallback()
+
+    // Add cross-tab authentication synchronization
+    const handleCrossTabAuthEvent = async (event: any) => {
+      console.log('Cross-tab auth event:', event)
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (event.type === 'SIGN_OUT') {
+          if (user) {
+            console.log('Sign out detected from another tab')
+            setUser(null)
+            setProfile(null)
+          }
+        } else if (event.type === 'SIGN_IN' || event.type === 'AUTH_STATE_CHANGED') {
+          if (session?.user && (!user || session.user.id !== user.id)) {
+            console.log('Sign in detected from another tab')
+            setUser(session.user)
+            await refreshProfile()
+          } else if (!session?.user && user) {
+            console.log('Sign out state detected from another tab')
+            setUser(null)
+            setProfile(null)
+          }
+        }
+      } catch (error) {
+        console.error('Error handling cross-tab auth event:', error)
+      }
+    }
+
+    const removeListener = addListener(handleCrossTabAuthEvent)
+
+    // Add window focus listener to refresh auth state when user returns to tab
+    const handleWindowFocus = async () => {
+      if (!user) {
+        console.log('Window focused, checking for auth state changes')
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user && session.user.id !== user?.id) {
+            console.log('New session detected on window focus')
+            setUser(session.user)
+            await refreshProfile()
+          }
+        } catch (error) {
+          console.error('Error checking auth state on window focus:', error)
+        }
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleWindowFocus)
+    }
 
     // Listen for auth state changes (simplified)
     const {
@@ -135,6 +235,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('User signed out, clearing all state')
         setUser(null)
         setProfile(null)
+        // Broadcast sign-out to other tabs
+        broadcastSignOut()
         if (mounted) {
           setLoading(false)
         }
@@ -151,6 +253,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (mounted) {
             setProfile(profile)
           }
+          // Broadcast sign-in to other tabs
+          broadcastSignIn(session.user.id)
         } catch (error) {
           console.error('Error loading profile on auth change:', error)
         }
@@ -167,6 +271,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false
       subscription.unsubscribe()
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleWindowFocus)
+      }
+      removeListener()
     }
   }, [])
 

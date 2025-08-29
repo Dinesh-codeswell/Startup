@@ -43,30 +43,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const cookieStore = cookies()
+    // Store cookies to be set on the final response
+    const cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }> = []
+    const cookiesToRemove: Array<{ name: string; options: CookieOptions }> = []
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value
+            return request.cookies.get(name)?.value
           },
           set(name: string, value: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value, ...options })
-            } catch (error) {
-              // Handle cookie setting errors gracefully
-              console.warn('Failed to set cookie:', name, error)
-            }
+            console.log('🍪 Queuing cookie to set:', { name, hasValue: !!value, options })
+            cookiesToSet.push({ name, value, options })
           },
           remove(name: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value: '', ...options })
-            } catch (error) {
-              // Handle cookie removal errors gracefully
-              console.warn('Failed to remove cookie:', name, error)
-            }
+            console.log('🗑️ Queuing cookie to remove:', name)
+            cookiesToRemove.push({ name, options })
           },
         },
       }
@@ -81,12 +76,55 @@ export async function GET(request: NextRequest) {
       const loginUrl = new URL('/login', requestUrl.origin)
       loginUrl.searchParams.set('error', 'session_exchange_failed')
       loginUrl.searchParams.set('details', exchangeError.message)
-      return NextResponse.redirect(loginUrl)
+      
+      const errorResponse = NextResponse.redirect(loginUrl)
+      // Apply any cookies that were queued
+      cookiesToSet.forEach(({ name, value, options }) => {
+        errorResponse.cookies.set(name, value, {
+          ...options,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        })
+      })
+      cookiesToRemove.forEach(({ name, options }) => {
+        errorResponse.cookies.set(name, '', {
+          ...options,
+          expires: new Date(0),
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        })
+      })
+      return errorResponse
     }
     
     if (!data.user) {
       console.error('No user data received after session exchange')
-      return NextResponse.redirect(new URL('/login?error=no_user_data', requestUrl.origin))
+      const errorResponse = NextResponse.redirect(new URL('/login?error=no_user_data', requestUrl.origin))
+      // Apply any cookies that were queued
+      cookiesToSet.forEach(({ name, value, options }) => {
+        errorResponse.cookies.set(name, value, {
+          ...options,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        })
+      })
+      cookiesToRemove.forEach(({ name, options }) => {
+        errorResponse.cookies.set(name, '', {
+          ...options,
+          expires: new Date(0),
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        })
+      })
+      return errorResponse
     }
 
     console.log('User authenticated successfully:', {
@@ -158,14 +196,71 @@ export async function GET(request: NextRequest) {
     
     console.log('Redirecting authenticated user to:', finalRedirectUrl)
     
-    // Clean redirect without additional parameters to prevent URL hash issues
-    return NextResponse.redirect(new URL(finalRedirectUrl, requestUrl.origin))
+    // Create redirect response with cookies properly applied
+    const redirectResponse = NextResponse.redirect(new URL(finalRedirectUrl, requestUrl.origin))
+    
+    // Apply all queued cookies to the redirect response
+    cookiesToSet.forEach(({ name, value, options }) => {
+      redirectResponse.cookies.set(name, value, {
+        ...options,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+      })
+    })
+    
+    cookiesToRemove.forEach(({ name, options }) => {
+      redirectResponse.cookies.set(name, '', {
+        ...options,
+        expires: new Date(0),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+      })
+    })
+    
+    console.log('🍪 Cookies applied to redirect response:', cookiesToSet.map(c => c.name))
+    
+    return redirectResponse
     
   } catch (error) {
     console.error('Unexpected error in auth callback:', error)
     const loginUrl = new URL('/login', requestUrl.origin)
     loginUrl.searchParams.set('error', 'callback_error')
     loginUrl.searchParams.set('details', error instanceof Error ? error.message : 'Unknown error')
-    return NextResponse.redirect(loginUrl)
+    
+    const errorResponse = NextResponse.redirect(loginUrl)
+    // Try to preserve any cookies that might have been queued before the error
+    try {
+      if (typeof cookiesToSet !== 'undefined') {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          errorResponse.cookies.set(name, value, {
+            ...options,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+          })
+        })
+      }
+      if (typeof cookiesToRemove !== 'undefined') {
+        cookiesToRemove.forEach(({ name, options }) => {
+          errorResponse.cookies.set(name, '', {
+            ...options,
+            expires: new Date(0),
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+          })
+        })
+      }
+    } catch (cookieError) {
+      console.warn('Failed to preserve cookies in error response:', cookieError)
+    }
+    
+    return errorResponse
   }
 }

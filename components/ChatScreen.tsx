@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Send, Smile } from "lucide-react"
-import Avatar from "./Avatar"
+import React, { useState, useRef, useEffect } from 'react'
+import { Send, Smile } from 'lucide-react'
 
 interface ChatScreenProps {
   teamData: any
@@ -11,46 +10,15 @@ interface ChatScreenProps {
 }
 
 export default function ChatScreen({ teamData, currentUser, onUnreadCountChange }: ChatScreenProps) {
-  const [message, setMessage] = useState("")
+  const [newMessage, setNewMessage] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   
-  // Mock chat messages data
-  const [chatMessages] = useState([
-    {
-      id: 1,
-      userName: "Alex Chen",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=AC",
-      message: "Hey team! Just finished the user research phase. Found some interesting insights about our target audience.",
-      timestamp: "2:30 PM",
-      isCurrentUser: false,
-    },
-    {
-      id: 2,
-      userName: "Sarah Kim",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=SK",
-      message: "That's awesome! Can you share the key findings in our next meeting?",
-      timestamp: "2:32 PM",
-      isCurrentUser: false,
-    },
-    {
-      id: 3,
-      userName: "You",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=ME",
-      message: "I've been working on the prototype. Should have something to show by tomorrow.",
-      timestamp: "2:35 PM",
-      isCurrentUser: true,
-    },
-    {
-      id: 4,
-      userName: "Mike Johnson",
-      userAvatar: "/placeholder.svg?height=40&width=40&text=MJ",
-      message: "Perfect timing! I'll have the technical architecture ready by then too.",
-      timestamp: "2:37 PM",
-      isCurrentUser: false,
-    },
-  ])
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const teamId = teamData?.team?.id
   
 
 
@@ -155,12 +123,40 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
     }
   }, [showEmojiPicker])
 
+  const loadMessages = async () => {
+    if (!teamId) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/team-chat/messages?team_id=${teamId}&limit=50`, {
+        credentials: 'include'
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setChatMessages(data.data.messages || [])
+        setError(null)
+      } else {
+        setError(data.error || 'Failed to load messages')
+      }
+    } catch (err) {
+      console.error('Error loading messages:', err)
+      setError('Failed to load messages')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMessages()
+  }, [teamId])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatMessages])
 
   const handleEmojiClick = (emoji: string) => {
-    setMessage((prev) => prev + emoji)
+    setNewMessage((prev) => prev + emoji)
     setShowEmojiPicker(false)
   }
 
@@ -169,45 +165,31 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
   }
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !teamData?.team?.id) return
-    
-    const messageText = message.trim()
-    setMessage("") // Clear input immediately for better UX
-    
-    try {
-      const response = await fetch('/api/team-chat/messages', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          team_id: teamData.team.id,
-          message_text: messageText,
-          message_type: 'text',
-          user_id: currentUser.id
+    if (newMessage.trim() && teamId) {
+      try {
+        const response = await fetch('/api/team-chat/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            team_id: teamId,
+            message_text: newMessage.trim()
+          })
         })
-      })
-      
-      if (response.ok) {
+        
         const data = await response.json()
         if (data.success) {
-          // Reload messages to get the new message with proper formatting
+          setNewMessage('')
           await loadMessages()
         } else {
-          console.error('Failed to send message:', data.error)
-          setError('Failed to send message')
-          setMessage(messageText) // Restore message on error
+          setError(data.error || 'Failed to send message')
         }
-      } else {
-        console.error('Failed to send message')
+      } catch (error) {
+        console.error('Error sending message:', error)
         setError('Failed to send message')
-        setMessage(messageText) // Restore message on error
       }
-    } catch (err) {
-      console.error('Error sending message:', err)
-      setError('Error sending message')
-      setMessage(messageText) // Restore message on error
     }
   }
 
@@ -220,32 +202,51 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
 
       <div className="flex-1 overflow-hidden">
         <div className="h-96 px-6 py-4 overflow-y-auto scroll-smooth border-slate-600 border-r-0 border-l-0">
-          <div className="space-y-6">
-            {chatMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex items-start space-x-3 ${msg.isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
-              >
-                <Avatar name={msg.userName} src={msg.userAvatar} size="md" />
-                <div className={`flex-1 ${msg.isCurrentUser ? "flex flex-col items-end" : ""}`}>
+          {loading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="text-gray-500">Loading messages...</div>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="text-red-500">{error}</div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {chatMessages.map((msg) => {
+                 const isCurrentUser = msg.sender_id === currentUser?.id
+                return (
                   <div
-                    className={`flex items-center space-x-2 mb-2 ${msg.isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
+                    key={msg.id}
+                    className={`flex items-start space-x-3 ${isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
                   >
-                    <span className="font-medium text-gray-900 text-sm">{msg.userName}</span>
-                    <span className="text-xs text-gray-500">{msg.timestamp}</span>
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700">
+                      {msg.sender_avatar ? (
+                        <img src={msg.sender_avatar} alt={msg.sender_name || 'Unknown'} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <span>{(msg.sender_name || 'U').charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className={`flex-1 ${isCurrentUser ? "flex flex-col items-end" : ""}`}>
+                      <div
+                        className={`flex items-center space-x-2 mb-2 ${isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
+                      >
+                        <span className="font-medium text-gray-900 text-sm">{msg.sender_name || 'Unknown'}</span>
+                        <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString()}</span>
+                      </div>
+                      <div
+                        className={`inline-block rounded-2xl px-4 py-3 max-w-md ${
+                          isCurrentUser ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">{msg.message_text}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    className={`inline-block rounded-2xl px-4 py-3 max-w-md ${
-                      msg.isCurrentUser ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed">{msg.message}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+                )
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -254,8 +255,8 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
           <div className="flex-1 relative">
             <input
               type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type your message..."
               className="w-full border border-gray-300 rounded-full px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}

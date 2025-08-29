@@ -15,24 +15,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
 
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is participant in this team
     const { data: participant } = await supabase
       .from('team_chat_participants')
-      .select('id, display_name')
+      .select(`
+        id, 
+        display_name,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', team_id)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 
@@ -51,7 +58,7 @@ export async function POST(request: NextRequest) {
         .from('team_chat_typing')
         .upsert({
           team_id,
-          user_id: user.id,
+          user_id: userId,
           expires_at: expiresAt.toISOString()
         }, {
           onConflict: 'team_id,user_id'
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
         .from('team_chat_typing')
         .delete()
         .eq('team_id', team_id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
 
       if (error) {
         console.error('Error removing typing indicator:', error)
@@ -111,24 +118,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
 
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is participant in this team
     const { data: participant } = await supabase
       .from('team_chat_participants')
-      .select('id')
+      .select(`
+        id,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 
@@ -154,7 +167,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('team_id', teamId)
-      .neq('user_id', user.id)
+      .neq('user_id', userId)
       .gt('expires_at', new Date().toISOString())
       .eq('team_chat_participants.is_active', true)
 

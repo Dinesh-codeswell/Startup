@@ -369,73 +369,67 @@ const TeamDashboard = ({ userStatus }) => {
 
   // Monitor tasks for unread count updates
   useEffect(() => {
-    if (teamData?.tasks && activeRoute !== 'tasks') {
-      const newTasksCount = teamData.tasks.filter(task => {
-        const taskCreatedTime = new Date(task.created_at || task.createdAt || Date.now()).getTime()
-        return taskCreatedTime > lastVisitedTimes.tasks
-      }).length
+    const fetchUnreadTasks = async () => {
+      if (!userStatus?.team?.id || activeRoute === 'tasks') return
       
-      setUnreadCounts(prev => ({ ...prev, tasks: newTasksCount }))
+      try {
+        // For now, use 0 as we don't have a tasks API yet
+        // TODO: Implement tasks API and fetch real unread count
+        setUnreadCounts(prev => ({ ...prev, tasks: 0 }))
+      } catch (error) {
+        console.error('Error fetching unread tasks:', error)
+        setUnreadCounts(prev => ({ ...prev, tasks: 0 }))
+      }
     }
-  }, [teamData?.tasks, lastVisitedTimes.tasks, activeRoute])
+    
+    fetchUnreadTasks()
+  }, [userStatus?.team?.id, lastVisitedTimes.tasks, activeRoute])
 
   // Monitor chat messages for unread count updates
   useEffect(() => {
-    if (teamData?.chatMessages && activeRoute !== 'chat') {
-      const newMessagesCount = teamData.chatMessages.filter(message => {
-        const messageTime = new Date(message.timestamp).getTime()
-        return messageTime > lastVisitedTimes.chat && message.userId !== currentUser.id
-      }).length
+    const fetchUnreadMessages = async () => {
+      if (!userStatus?.team?.id || !currentUser?.id || activeRoute === 'chat') return
       
-      setUnreadCounts(prev => ({ ...prev, chat: newMessagesCount }))
-    }
-  }, [teamData?.chatMessages, lastVisitedTimes.chat, activeRoute, currentUser.id])
-
-  // Simulate new tasks and messages for testing (remove in production)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (teamData && Math.random() > 0.7) { // 30% chance every 10 seconds
-        const isNewTask = Math.random() > 0.5
+      try {
+        const response = await fetch(`/api/team-chat/messages?team_id=${userStatus.team.id}&limit=50`, {
+          headers: {
+            'x-user-id': currentUser.id
+          }
+        })
+        const data = await response.json()
         
-        if (isNewTask) {
-          // Add a new task
-          const newTask = {
-            id: `task_${Date.now()}`,
-            title: `New Task ${Math.floor(Math.random() * 100)}`,
-            assignees: [currentUser.id],
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            status: "Not Started",
-            priority: ["High", "Medium", "Low"][Math.floor(Math.random() * 3)],
-            created_at: new Date().toISOString()
-          }
+        if (data.success && data.data.messages) {
+          const newMessagesCount = data.data.messages.filter(message => {
+            const messageTime = new Date(message.created_at).getTime()
+            return messageTime > lastVisitedTimes.chat && message.sender?.submission_id !== currentUser.submissionId
+          }).length
           
-          setTeamData(prev => ({
-            ...prev,
-            tasks: [...(prev?.tasks || []), newTask]
-          }))
+          setUnreadCounts(prev => ({ ...prev, chat: newMessagesCount }))
         } else {
-          // Add a new chat message
-          const randomMember = teamData.members[Math.floor(Math.random() * teamData.members.length)]
-          const newMessage = {
-            id: `msg_${Date.now()}`,
-            userId: randomMember.id,
-            userName: randomMember.name,
-            userAvatar: randomMember.avatarUrl,
-            message: `New message from ${randomMember.name} at ${new Date().toLocaleTimeString()}`,
-            timestamp: new Date().toISOString(),
-            isUnread: true
-          }
-          
-          setTeamData(prev => ({
-            ...prev,
-            chatMessages: [...(prev?.chatMessages || []), newMessage]
-          }))
+          setUnreadCounts(prev => ({ ...prev, chat: 0 }))
         }
+      } catch (error) {
+        console.error('Error fetching unread messages:', error)
+        setUnreadCounts(prev => ({ ...prev, chat: 0 }))
       }
-    }, 10000) // Check every 10 seconds
+    }
     
-    return () => clearInterval(interval)
-  }, [teamData, currentUser.id])
+    fetchUnreadMessages()
+  }, [userStatus?.team?.id, currentUser?.id, currentUser?.submissionId, lastVisitedTimes.chat, activeRoute])
+
+  // Initialize unread counts based on current data
+  useEffect(() => {
+    if (teamData && currentUser) {
+      // Initialize last visited times if not set
+      if (!lastVisitedTimes.chat && !lastVisitedTimes.tasks) {
+        const now = Date.now()
+        setLastVisitedTimes({
+          chat: now,
+          tasks: now
+        })
+      }
+    }
+  }, [teamData, currentUser])
 
 
 

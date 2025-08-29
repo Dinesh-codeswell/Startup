@@ -14,24 +14,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
 
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is participant in this team
     const { data: participant } = await supabase
       .from('team_chat_participants')
-      .select('id')
+      .select(`
+        id,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 

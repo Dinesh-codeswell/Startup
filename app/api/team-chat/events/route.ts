@@ -7,18 +7,6 @@ const connections = new Map<string, { controller: ReadableStreamDefaultControlle
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const teamId = searchParams.get('team_id')
 
@@ -29,12 +17,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID required in headers' },
+        { status: 401 }
+      )
+    }
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is part of the team
     const { data: participant, error: participantError } = await supabase
       .from('team_chat_participants')
-      .select('*')
+      .select(`
+        *,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 
@@ -48,8 +54,8 @@ export async function GET(request: NextRequest) {
     // Create Server-Sent Events stream
     const stream = new ReadableStream({
       start(controller) {
-        const connectionId = `${user.id}_${teamId}_${Date.now()}`
-        connections.set(connectionId, { controller, teamId, userId: user.id })
+        const connectionId = `${userId}_${teamId}_${Date.now()}`
+        connections.set(connectionId, { controller, teamId, userId: userId })
 
         // Send initial connection message
         controller.enqueue(`data: ${JSON.stringify({

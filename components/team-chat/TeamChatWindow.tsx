@@ -255,11 +255,18 @@ export function TeamChatWindow({
       setSending(true)
       setError(null)
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+
       const response = await fetch('/api/team-chat/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           team_id: teamId,
@@ -289,11 +296,18 @@ export function TeamChatWindow({
 
   const updateTypingIndicator = async (isTyping: boolean) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+
       await fetch('/api/team-chat/typing', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           team_id: teamId,
@@ -383,7 +397,17 @@ export function TeamChatWindow({
   // Load read receipts for messages
   const loadReadReceipts = async () => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+      
+      // Add user ID for simplified authentication
+      if (currentUserId) {
+        headers['x-user-id'] = currentUserId
+      }
+
       const response = await fetch(`/api/team-chat/read?teamId=${teamId}`, {
+        headers,
         credentials: 'include'
       })
       const data = await response.json()

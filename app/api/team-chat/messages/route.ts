@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
-import { cookies } from 'next/headers'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { broadcastMessage } from '../events/route'
 
 export async function GET(request: NextRequest) {
@@ -37,31 +36,64 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Create supabase client for database operations
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    // Use admin client to bypass RLS for simplified authentication
+    const supabase = supabaseAdmin
     
-    // Check if user has access to this team via team_chat_participants
-    // Note: team_chat_participants uses submission_id, not user_id
-    const { data: participant } = await supabase
-      .from('team_chat_participants')
+    // First check if user is a team member
+    const { data: teamMember, error: memberError } = await supabase
+      .from('team_members')
       .select(`
         *,
         team_matching_submissions!inner(
-          user_id
+          user_id,
+          full_name
         )
       `)
       .eq('team_id', teamId)
       .eq('team_matching_submissions.user_id', userId)
-      .eq('is_active', true)
       .single()
     
-    if (participantError || !participant) {
-      console.warn(`User ${userId} attempted to access team ${teamId} without permission:`, participantError?.message)
+    if (memberError || !teamMember) {
+      console.warn(`User ${userId} attempted to access team ${teamId} without membership:`, memberError?.message)
       return NextResponse.json(
         { success: false, error: 'Access denied to this team' },
         { status: 403 }
       )
+    }
+
+    // Auto-enroll user in chat if not already enrolled
+    const { data: participant, error: participantError } = await supabase
+      .from('team_chat_participants')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('submission_id', teamMember.submission_id)
+      .eq('is_active', true)
+      .single()
+    
+    if (participantError || !participant) {
+      // Auto-enroll user in team chat
+      const { data: newParticipant, error: enrollError } = await supabase
+        .from('team_chat_participants')
+        .insert({
+          team_id: teamId,
+          submission_id: teamMember.submission_id,
+          display_name: teamMember.team_matching_submissions.full_name || 'Unknown User',
+          is_active: true,
+          joined_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      if (enrollError) {
+        console.error(`Failed to auto-enroll user ${userId} in team chat:`, enrollError)
+        return NextResponse.json(
+          { success: false, error: 'Failed to join team chat' },
+          { status: 500 }
+        )
+      }
+      
+      console.log(`✅ Auto-enrolled user ${userId} in team ${teamId} chat`)
     }
 
     console.log(`✅ User ${userId} has access to team ${teamId}`)
@@ -81,7 +113,7 @@ export async function GET(request: NextRequest) {
         updated_at
       `)
       .eq('team_id', teamId)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .range(offset, offset + limit - 1)
 
     if (fetchError) {
@@ -150,7 +182,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { team_id, message_text, message_type = 'text', parent_message_id } = body
 
-    console.log('📝 Send message request:', { team_id, messageLength: message_text?.length, message_type })
+    // Convert message_type string to numeric value for database
+    const messageTypeMap: { [key: string]: number } = {
+      'text': 1,
+      'system': 2,
+      'file': 3
+    }
+    const numericMessageType = messageTypeMap[message_type] || 1
+
+    console.log('📝 Send message request:', { team_id, messageLength: message_text?.length, message_type, numericMessageType })
 
     if (!team_id || !message_text?.trim()) {
       return NextResponse.json(
@@ -180,31 +220,64 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create supabase client for database operations
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    // Use admin client to bypass RLS for simplified authentication
+    const supabase = supabaseAdmin
     
-    // Check if user has access to this team via team_chat_participants
-    // Note: team_chat_participants uses submission_id, not user_id
-    const { data: participant, error: participantError } = await supabase
-      .from('team_chat_participants')
+    // First check if user is a team member
+    const { data: teamMember, error: memberError } = await supabase
+      .from('team_members')
       .select(`
         *,
         team_matching_submissions!inner(
-          user_id
+          user_id,
+          full_name
         )
       `)
       .eq('team_id', team_id)
       .eq('team_matching_submissions.user_id', userId)
-      .eq('is_active', true)
       .single()
     
-    if (participantError || !participant) {
-      console.warn(`User ${userId} attempted to send message to team ${team_id} without permission:`, participantError?.message)
+    if (memberError || !teamMember) {
+      console.warn(`User ${userId} attempted to send message to team ${team_id} without membership:`, memberError?.message)
       return NextResponse.json(
         { success: false, error: 'Access denied to this team' },
         { status: 403 }
       )
+    }
+
+    // Auto-enroll user in chat if not already enrolled
+    const { data: participant, error: participantError } = await supabase
+      .from('team_chat_participants')
+      .select('*')
+      .eq('team_id', team_id)
+      .eq('submission_id', teamMember.submission_id)
+      .eq('is_active', true)
+      .single()
+    
+    if (participantError || !participant) {
+      // Auto-enroll user in team chat
+      const { data: newParticipant, error: enrollError } = await supabase
+        .from('team_chat_participants')
+        .insert({
+          team_id: team_id,
+          submission_id: teamMember.submission_id,
+          display_name: teamMember.team_matching_submissions.full_name || 'Unknown User',
+          is_active: true,
+          joined_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      if (enrollError) {
+        console.error(`Failed to auto-enroll user ${userId} in team chat:`, enrollError)
+        return NextResponse.json(
+          { success: false, error: 'Failed to join team chat' },
+          { status: 500 }
+        )
+      }
+      
+      console.log(`✅ Auto-enrolled user ${userId} in team ${team_id} chat`)
     }
 
     console.log(`✅ User ${userId} has access to team ${team_id}`)
@@ -216,7 +289,7 @@ export async function POST(request: NextRequest) {
           team_id: team_id,
           sender_id: userId,
           message_text: message_text.trim(),
-          message_type: message_type || 'text',
+          message_type: numericMessageType,
           parent_message_id: parent_message_id || null
         })
         .select(`

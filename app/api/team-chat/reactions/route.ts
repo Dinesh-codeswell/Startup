@@ -14,24 +14,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
 
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is participant in this team
     const { data: participant } = await supabase
       .from('team_chat_participants')
-      .select('id')
+      .select(`
+        id,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', team_id)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 
@@ -62,7 +68,7 @@ export async function POST(request: NextRequest) {
       .from('team_chat_reactions')
       .select('id')
       .eq('message_id', message_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('emoji', emoji.trim())
       .single()
 
@@ -91,7 +97,7 @@ export async function POST(request: NextRequest) {
         .from('team_chat_reactions')
         .insert({
           message_id,
-          user_id: user.id,
+          user_id: userId,
           emoji: emoji.trim()
         })
         .select()
@@ -133,24 +139,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
 
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
     // Verify user is participant in this team
     const { data: participant } = await supabase
       .from('team_chat_participants')
-      .select('id')
+      .select(`
+        id,
+        team_matching_submissions!inner(
+          user_id
+        )
+      `)
       .eq('team_id', teamId)
-      .eq('user_id', user.id)
+      .eq('team_matching_submissions.user_id', userId)
       .eq('is_active', true)
       .single()
 

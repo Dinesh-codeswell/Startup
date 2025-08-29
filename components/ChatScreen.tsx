@@ -124,12 +124,14 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
   }, [showEmojiPicker])
 
   const loadMessages = async () => {
-    if (!teamId) return
+    if (!teamId || !currentUser?.id) return
     
     try {
       setLoading(true)
       const response = await fetch(`/api/team-chat/messages?team_id=${teamId}&limit=50`, {
-        credentials: 'include'
+        headers: {
+          'x-user-id': currentUser.id
+        }
       })
       const data = await response.json()
       
@@ -165,14 +167,14 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
   }
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() && teamId) {
+    if (newMessage.trim() && teamId && currentUser?.id) {
       try {
         const response = await fetch('/api/team-chat/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-user-id': currentUser.id
           },
-          credentials: 'include',
           body: JSON.stringify({
             team_id: teamId,
             message_text: newMessage.trim()

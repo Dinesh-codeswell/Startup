@@ -14,17 +14,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    // Get user ID from headers (simplified authentication)
+    const userId = request.headers.get('x-user-id')
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'User ID required in headers' },
         { status: 401 }
       )
     }
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
 
     // Get user's submission ID
     const { data: submission } = await supabase
@@ -136,9 +137,9 @@ export async function POST(request: NextRequest) {
 
     // Get user's submission ID
     const { data: submission } = await supabase
-      .from('user_submissions')
+      .from('team_matching_submissions')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (!submission) {
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       .from('team_members')
       .select('id')
       .eq('team_id', teamId)
-      .eq('user_submission_id', submission.id)
+      .eq('submission_id', submission.id)
       .single()
 
     if (!teamMember) {

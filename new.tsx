@@ -285,8 +285,6 @@ const TeamDashboard = ({ userStatus }) => {
   const [showSuccessMessage, setShowSuccessMessage] = useState("")
   const [isEditingTeamName, setIsEditingTeamName] = useState(false)
   const [editedTeamName, setEditedTeamName] = useState("")
-  const [unreadCounts, setUnreadCounts] = useState({ chat: 0, tasks: 0 })
-  const [lastVisitedTimes, setLastVisitedTimes] = useState({ chat: Date.now(), tasks: Date.now() })
 
   // Load team data
   useEffect(() => {
@@ -367,91 +365,12 @@ const TeamDashboard = ({ userStatus }) => {
     }
   }, [userStatus])
 
-  // Monitor tasks for unread count updates
-  useEffect(() => {
-    if (teamData?.tasks && activeRoute !== 'tasks') {
-      const newTasksCount = teamData.tasks.filter(task => {
-        const taskCreatedTime = new Date(task.created_at || task.createdAt || Date.now()).getTime()
-        return taskCreatedTime > lastVisitedTimes.tasks
-      }).length
-      
-      setUnreadCounts(prev => ({ ...prev, tasks: newTasksCount }))
-    }
-  }, [teamData?.tasks, lastVisitedTimes.tasks, activeRoute])
-
-  // Monitor chat messages for unread count updates
-  useEffect(() => {
-    if (teamData?.chatMessages && activeRoute !== 'chat') {
-      const newMessagesCount = teamData.chatMessages.filter(message => {
-        const messageTime = new Date(message.timestamp).getTime()
-        return messageTime > lastVisitedTimes.chat && message.userId !== currentUser.id
-      }).length
-      
-      setUnreadCounts(prev => ({ ...prev, chat: newMessagesCount }))
-    }
-  }, [teamData?.chatMessages, lastVisitedTimes.chat, activeRoute, currentUser.id])
-
-  // Simulate new tasks and messages for testing (remove in production)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (teamData && Math.random() > 0.7) { // 30% chance every 10 seconds
-        const isNewTask = Math.random() > 0.5
-        
-        if (isNewTask) {
-          // Add a new task
-          const newTask = {
-            id: `task_${Date.now()}`,
-            title: `New Task ${Math.floor(Math.random() * 100)}`,
-            assignees: [currentUser.id],
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            status: "Not Started",
-            priority: ["High", "Medium", "Low"][Math.floor(Math.random() * 3)],
-            created_at: new Date().toISOString()
-          }
-          
-          setTeamData(prev => ({
-            ...prev,
-            tasks: [...(prev?.tasks || []), newTask]
-          }))
-        } else {
-          // Add a new chat message
-          const randomMember = teamData.members[Math.floor(Math.random() * teamData.members.length)]
-          const newMessage = {
-            id: `msg_${Date.now()}`,
-            userId: randomMember.id,
-            userName: randomMember.name,
-            userAvatar: randomMember.avatarUrl,
-            message: `New message from ${randomMember.name} at ${new Date().toLocaleTimeString()}`,
-            timestamp: new Date().toISOString(),
-            isUnread: true
-          }
-          
-          setTeamData(prev => ({
-            ...prev,
-            chatMessages: [...(prev?.chatMessages || []), newMessage]
-          }))
-        }
-      }
-    }, 10000) // Check every 10 seconds
-    
-    return () => clearInterval(interval)
-  }, [teamData, currentUser.id])
-
 
 
   // Handle route changes
   const handleRouteChange = (route) => {
     setActiveRoute(route)
     setIsMobileMenuOpen(false)
-    
-    // Reset unread counts when visiting the respective sections
-    if (route === 'chat') {
-      setUnreadCounts(prev => ({ ...prev, chat: 0 }))
-      setLastVisitedTimes(prev => ({ ...prev, chat: Date.now() }))
-    } else if (route === 'tasks') {
-      setUnreadCounts(prev => ({ ...prev, tasks: 0 }))
-      setLastVisitedTimes(prev => ({ ...prev, tasks: Date.now() }))
-    }
   }
 
   // Copy team code to clipboard
@@ -608,7 +527,7 @@ const TeamDashboard = ({ userStatus }) => {
           <LeftNavigation
             activeRoute={activeRoute}
             onRouteChange={handleRouteChange}
-            unreadCounts={unreadCounts}
+            unreadCounts={{ chat: 0, tasks: 0 }}
             isMobileMenuOpen={isMobileMenuOpen}
             currentUserRole={currentUser.role}
           />

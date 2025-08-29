@@ -47,6 +47,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState("all")
 
   // Transform team data to get team members
   const teamMembers: TeamMember[] = teamData?.members?.map((member: any) => ({
@@ -364,12 +365,16 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
             <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
 
             <div className="flex items-center space-x-3">
-              <select className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="all">All Tasks</option>
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
               </select>
 
               <button
@@ -384,7 +389,7 @@ export default function TasksScreen({ teamData, currentUser, onRouteChange }: Ta
         </div>
 
         <div className="space-y-4">
-          {tasks.map((task) => (
+          {tasks.filter(task => filterStatus === "all" || task.status === filterStatus).map((task) => (
             <div
               key={task.id}
               className="bg-white border border-gray-200 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow"

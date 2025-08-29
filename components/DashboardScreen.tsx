@@ -51,6 +51,12 @@ export default function DashboardScreen({
 }: DashboardScreenProps) {
   const [showMemberModal, setShowMemberModal] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TeamMemberDisplay | null>(null)
+  const [tasks, setTasks] = useState<any[]>([])
+  const [tasksLoading, setTasksLoading] = useState(true)
+  const [tasksError, setTasksError] = useState<string | null>(null)
+  const [requestReason, setRequestReason] = useState("")
+  const [requestDetails, setRequestDetails] = useState("")
+  const [error, setError] = useState("")
   
   // Show loading state if user authentication is still being determined
   if (!currentUser) {
@@ -84,30 +90,134 @@ export default function DashboardScreen({
   const currentTeamData = realTeamData || teamData
   const currentMembers = realMembers.length > 0 ? realMembers : (teamData?.members || [])
 
+  // API Functions for Tasks
+  const fetchTasks = async () => {
+    if (!currentTeamData?.team?.id && !currentTeamData?.id) return
+    
+    try {
+      setTasksLoading(true)
+      const teamId = currentTeamData?.team?.id || currentTeamData?.id
+      const response = await fetch(`/api/tasks/team/${teamId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks')
+      }
+      
+      const data = await response.json()
+      setTasks(data.tasks || [])
+      setTasksError(null)
+    } catch (err) {
+      console.error('Error fetching tasks:', err)
+      setTasksError('Failed to load tasks')
+      setTasks([])
+    } finally {
+      setTasksLoading(false)
+    }
+  }
+
+  // Load tasks on component mount and when teamData changes
+  useEffect(() => {
+    fetchTasks()
+  }, [currentTeamData])
+
   const handleMemberClick = (member: TeamMemberDisplay) => {
     setSelectedMember(member)
     setShowMemberModal(true)
   }
 
-  const handleRequestTeamChange = () => {
-    setShowRequestModal(true)
+  const handleSubmitRequest = async () => {
+    if (!requestReason.trim()) {
+      setError("Please enter a reason for your request")
+      return
+    }
+
+    if (requestReason.length < 10 || requestReason.length > 500) {
+      setError("Reason must be between 10 and 500 characters")
+      return
+    }
+
+    if (requestDetails && requestDetails.length > 2000) {
+      setError("Details must not exceed 2000 characters")
+      return
+    }
+
+    try {
+      const response = await fetch('/api/team-change-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          teamId: currentTeamData?.id || currentTeamData?.team?.id,
+          requestType: 'leave_team',
+          reason: requestReason.trim(),
+          details: requestDetails.trim() || null
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit request')
+      }
+
+      setShowRequestModal(false)
+      setRequestReason("")
+      setRequestDetails("")
+      setError("")
+      setShowSuccessMessage("Your team change request has been submitted successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error submitting request:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit request')
+    }
   }
 
-  const handleSubmitRequest = () => {
-    setShowRequestModal(false)
-    setReportMessage("")
-    setShowSuccessMessage("Your ticket is raised")
-    setTimeout(() => setShowSuccessMessage(""), 3000)
+  const handleSubmitReport = async () => {
+    if (!reportMessage.trim()) {
+      setError("Please enter an issue description")
+      return
+    }
+
+    if (reportMessage.length < 10 || reportMessage.length > 2000) {
+      setError("Issue description must be between 10 and 2000 characters")
+      return
+    }
+
+    try {
+      const response = await fetch('/api/issue-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          teamId: currentTeamData?.id || currentTeamData?.team?.id,
+          reportType: 'bug',
+          description: reportMessage.trim(),
+          priority: 'medium'
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit report')
+      }
+
+      setShowReportModal(false)
+      setReportMessage("")
+      setError("")
+      setShowSuccessMessage("Your issue report has been submitted successfully!")
+      setTimeout(() => setShowSuccessMessage(""), 3000)
+    } catch (err) {
+      console.error('Error submitting report:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit report')
+    }
   }
 
-  const handleSubmitReport = () => {
-    setShowReportModal(false)
-    setReportMessage("")
-    setShowSuccessMessage("Your ticket is raised")
-    setTimeout(() => setShowSuccessMessage(""), 3000)
-  }
-
-  const upcomingTasks = (currentTasks || [])
+  const upcomingTasks = (tasks || [])
     .filter((task) => task.status !== "Completed")
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 3)
@@ -152,7 +262,7 @@ export default function DashboardScreen({
               ) : (
                 <div className="flex items-center space-x-2">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {currentTeamData?.team?.team_name || "Team Name"}
+                    {currentTeamData?.team?.name || currentTeamData?.name || "Team Name"}
                   </h2>
                   <button
                     onClick={() => setIsEditingTeamName(true)}
@@ -166,16 +276,10 @@ export default function DashboardScreen({
                 </div>
               )}
             </div>
-            <span className="text-sm text-gray-500">
-              Team Formed at {currentTeamData?.formationDate || new Date().toLocaleDateString()}
-            </span>
           </div>
-          <button
-            onClick={handleRequestTeamChange}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Request Team Change
-          </button>
+          <span className="text-sm text-gray-500">
+            Team formed on {currentTeamData?.team?.created_at ? new Date(currentTeamData.team.created_at).toLocaleDateString() : currentTeamData?.formationDate || new Date().toLocaleDateString()}
+          </span>
         </div>
 
         {/* Team Members Count */}
@@ -266,6 +370,141 @@ export default function DashboardScreen({
         </div>
       </div>
 
+      {/* Team Strengths Analysis */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
+        <div className="xl:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6">
+          <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4 lg:mb-6">Team Strengths Analysis</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+            <div>
+              <div className="rounded-lg p-4 bg-blue-50 border border-blue-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-base lg:text-lg font-medium text-gray-900">Team Complementarity</h4>
+                  <span className="font-bold text-green-600 text-xl lg:text-2xl">85/100</span>
+                </div>
+                <p className="text-xs lg:text-sm text-gray-600 mb-4">
+                  Excellent balance between strategic, analytical, creative, and technical skills
+                </p>
+                <div className="space-y-2 text-xs lg:text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-gray-700">Well-rounded skill coverage</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-gray-700">Strong analytical foundation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">Skill Coverage by Domain</h4>
+              <div className="space-y-3 lg:space-y-4">
+                {[
+                  { skill: "Consulting", percentage: 90, color: "bg-green-500" },
+                  { skill: "Technology", percentage: 65, color: "bg-yellow-500" },
+                  { skill: "Finance", percentage: 85, color: "bg-green-500" },
+                  { skill: "Marketing", percentage: 55, color: "bg-red-500" },
+                  { skill: "Design", percentage: 80, color: "bg-green-500" },
+                ].map((item) => (
+                  <div key={item.skill} className="flex items-center space-x-3">
+                    <span className="text-xs lg:text-sm font-medium text-gray-700 w-16 lg:w-20 flex-shrink-0">{item.skill}</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 lg:h-3">
+                      <div className={`h-2 lg:h-3 rounded-full ${item.color}`} style={{ width: `${item.percentage}%` }}></div>
+                    </div>
+                    <span className="text-xs lg:text-sm font-medium text-gray-900 w-8 flex-shrink-0">{item.percentage}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Upcoming Tasks */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base lg:text-lg font-semibold text-gray-900">Upcoming Tasks</h3>
+            <button
+              onClick={() => onRouteChange("tasks")}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium touch-manipulation"
+            >
+              View All
+            </button>
+          </div>
+          <div className="space-y-3 lg:space-y-4">
+            {tasksLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-500 mt-2">Loading tasks...</p>
+              </div>
+            ) : tasksError ? (
+              <div className="text-center py-4">
+                <p className="text-red-500">{tasksError}</p>
+                <button 
+                  onClick={fetchTasks}
+                  className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : upcomingTasks.length > 0 ? (
+              upcomingTasks.map((task) => (
+                <div key={task.id} className="border border-gray-200 rounded-lg p-3 lg:p-4">
+                  <h4 className="font-medium text-gray-900 mb-2 text-sm lg:text-base">{task.title}</h4>
+                  <p className="text-xs lg:text-sm text-gray-600 mb-2">Assigned to: {task.assignees?.join(", ") || "Unassigned"}</p>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        task.priority === "High"
+                          ? "bg-red-100 text-red-800"
+                          : task.priority === "Medium"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {task.priority}
+                    </span>
+                    <span className="text-xs lg:text-sm text-gray-500">Due: {task.dueDate}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No upcoming tasks</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6">
+        <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => setShowRequestModal(true)}
+            className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left touch-manipulation"
+          >
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={16} className="text-orange-600" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-medium text-gray-900 text-sm lg:text-base">Request Team Change</h4>
+              <p className="text-xs lg:text-sm text-gray-600">Request to leave or switch teams</p>
+            </div>
+          </button>
+          <button
+            onClick={() => setShowReportModal(true)}
+            className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left touch-manipulation"
+          >
+            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={16} className="text-red-600" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-medium text-gray-900 text-sm lg:text-base">Report an Issue</h4>
+              <p className="text-xs lg:text-sm text-gray-600">Contact support about team issues</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Member Details Modal */}
       {showMemberModal && selectedMember && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -335,17 +574,39 @@ export default function DashboardScreen({
                   Reason for team change request
                 </label>
                 <textarea
-                  value={reportMessage}
-                  onChange={(e) => setReportMessage(e.target.value)}
+                  value={requestReason}
+                  onChange={(e) => setRequestReason(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={4}
                   placeholder="Please describe why you want to change teams..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional details (optional)
+                </label>
+                <textarea
+                  value={requestDetails}
+                  onChange={(e) => setRequestDetails(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Any additional information..."
+                />
+              </div>
+              {error && (
+                <div className="text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
             </div>
             <div className="flex justify-end space-x-3 mt-4">
               <button
-                onClick={() => setShowRequestModal(false)}
+                onClick={() => {
+                  setShowRequestModal(false)
+                  setRequestReason("")
+                  setRequestDetails("")
+                  setError("")
+                }}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -387,8 +648,23 @@ export default function DashboardScreen({
                   placeholder="Please describe the issue you're experiencing..."
                 />
               </div>
+              {error && (
+                <div className="text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
             </div>
             <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowReportModal(false)
+                  setReportMessage("")
+                  setError("")
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleSubmitReport}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

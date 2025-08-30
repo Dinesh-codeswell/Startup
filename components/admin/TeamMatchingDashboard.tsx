@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase-browser'
 import type { TeamMatchingStats, TeamMatchingSubmission, TeamWithMembers } from '@/lib/types/team-matching'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface TeamMatchingDashboardProps {
   className?: string
@@ -17,9 +19,25 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
   const [loading, setLoading] = useState(true)
   const [formingTeams, setFormingTeams] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false)
+  
+  const supabase = createClient()
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     loadDashboardData()
+    setupRealTimeSubscriptions()
+    
+    // Cleanup on unmount
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
   }, [])
 
   const loadDashboardData = async () => {
@@ -57,6 +75,86 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
     } finally {
       setLoading(false)
     }
+  }
+
+  const setupRealTimeSubscriptions = () => {
+    try {
+      // Create a channel for real-time updates
+      const channel = supabase
+        .channel('admin-dashboard-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'team_matching_submissions'
+          },
+          (payload) => {
+            console.log('Real-time update received:', payload)
+            // Refresh dashboard data when submissions change
+            loadDashboardData()
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public', 
+            table: 'teams'
+          },
+          (payload) => {
+            console.log('Team update received:', payload)
+            // Refresh dashboard data when teams change
+            loadDashboardData()
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'team_members'
+          },
+          (payload) => {
+            console.log('Team members update received:', payload)
+            // Refresh dashboard data when team membership changes
+            loadDashboardData()
+          }
+        )
+        .subscribe((status) => {
+          console.log('Real-time subscription status:', status)
+          setIsRealTimeConnected(status === 'SUBSCRIBED')
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Real-time updates connected')
+            // Clear polling if real-time is working
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+            }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.log('❌ Real-time connection failed, falling back to polling')
+            setupPollingFallback()
+          }
+        })
+
+      channelRef.current = channel
+    } catch (error) {
+      console.error('Error setting up real-time subscriptions:', error)
+      setupPollingFallback()
+    }
+  }
+
+  const setupPollingFallback = () => {
+    // Set up polling as fallback (every 30 seconds)
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+    }
+    
+    pollingIntervalRef.current = setInterval(() => {
+      console.log('Polling for updates...')
+      loadDashboardData()
+    }, 30000) // Poll every 30 seconds
   }
 
   const handleFormTeams = async () => {
@@ -137,7 +235,17 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
     <div className={`p-6 space-y-6 ${className}`}>
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Team Matching Dashboard</h1>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-3xl font-bold text-gray-900">Team Matching Dashboard</h1>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              isRealTimeConnected ? 'bg-green-500' : 'bg-yellow-500'
+            }`}></div>
+            <span className="text-sm text-gray-600">
+              {isRealTimeConnected ? 'Live Updates' : 'Polling Mode'}
+            </span>
+          </div>
+        </div>
         <div className="flex space-x-3">
           <Button 
             onClick={async () => {

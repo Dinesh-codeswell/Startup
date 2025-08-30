@@ -19,13 +19,29 @@ export async function createProfileForUser(user: User): Promise<Profile | null> 
       return existingProfile
     }
     
-    // Extract name from user metadata or email
-    const firstName = user.user_metadata?.first_name || 
-                     user.user_metadata?.full_name?.split(' ')[0] || 
-                     user.email?.split('@')[0] || ''
+    // Extract and parse the full name from OAuth metadata
+    const fullNameFromOAuth = user.user_metadata?.full_name || 
+                              user.user_metadata?.name || 
+                              user.user_metadata?.display_name || '';
     
-    const lastName = user.user_metadata?.last_name || 
-                    user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || ''
+    let firstName = '';
+    let lastName = '';
+    
+    if (fullNameFromOAuth && fullNameFromOAuth.trim() !== '') {
+      // Split full name into first and last name
+      const nameParts = fullNameFromOAuth.trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    } else {
+      // Fallback to individual first_name and last_name fields
+      firstName = user.user_metadata?.first_name || user.email?.split('@')[0] || '';
+      lastName = user.user_metadata?.last_name || '';
+    }
+    
+    // Ensure we have at least a first name
+    if (!firstName || firstName.trim() === '') {
+      firstName = user.email?.split('@')[0] || '';
+    }
     
     const collegeName = user.user_metadata?.college_name || ''
     

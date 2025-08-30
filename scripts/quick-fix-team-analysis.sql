@@ -8,8 +8,7 @@
 -- Step 1: Fix submission statuses for team members
 UPDATE team_matching_submissions 
 SET 
-    status = 'team_formed',
-    updated_at = NOW()
+    status = 'team_formed'
 WHERE id IN (
     SELECT DISTINCT tms.id
     FROM team_matching_submissions tms

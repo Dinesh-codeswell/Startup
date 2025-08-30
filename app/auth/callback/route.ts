@@ -146,14 +146,34 @@ export async function GET(request: NextRequest) {
         // Profile doesn't exist, create one
         console.log('Creating new profile for user:', data.user.email)
         
+        // Extract and parse the full name from OAuth metadata
+        const fullNameFromOAuth = data.user.user_metadata?.full_name || 
+                                 data.user.user_metadata?.name || 
+                                 data.user.user_metadata?.display_name || '';
+        
+        let extractedFirstName = '';
+        let extractedLastName = '';
+        
+        if (fullNameFromOAuth && fullNameFromOAuth.trim() !== '') {
+          // Split full name into first and last name
+          const nameParts = fullNameFromOAuth.trim().split(' ');
+          extractedFirstName = nameParts[0] || '';
+          extractedLastName = nameParts.slice(1).join(' ') || '';
+        } else {
+          // Fallback to individual first_name and last_name fields
+          extractedFirstName = data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || '';
+          extractedLastName = data.user.user_metadata?.last_name || '';
+        }
+        
+        // Ensure we have at least a first name
+        if (!extractedFirstName || extractedFirstName.trim() === '') {
+          extractedFirstName = data.user.email?.split('@')[0] || '';
+        }
+        
         const profileData = {
           id: data.user.id,
-          first_name: data.user.user_metadata?.first_name || 
-                     data.user.user_metadata?.full_name?.split(' ')[0] || 
-                     data.user.user_metadata?.name?.split(' ')[0] || '',
-          last_name: data.user.user_metadata?.last_name || 
-                    data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 
-                    data.user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
+          first_name: extractedFirstName,
+          last_name: extractedLastName,
           email: data.user.email || '',
           college_name: data.user.user_metadata?.college_name || '',
           full_access: true

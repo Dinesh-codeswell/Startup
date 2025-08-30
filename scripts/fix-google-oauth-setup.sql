@@ -39,12 +39,44 @@ CREATE POLICY "Service role can manage profiles" ON profiles
 -- Step 4: Create or replace the user creation function
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  extracted_first_name TEXT;
+  extracted_last_name TEXT;
+  full_name_from_oauth TEXT;
 BEGIN
+  -- Extract full name from various OAuth metadata fields
+  full_name_from_oauth := COALESCE(
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'name',
+    NEW.raw_user_meta_data->>'display_name'
+  );
+  
+  -- Parse first and last name from full name or use individual fields
+  IF full_name_from_oauth IS NOT NULL AND trim(full_name_from_oauth) != '' THEN
+    -- Split full name into first and last name
+    extracted_first_name := trim(split_part(full_name_from_oauth, ' ', 1));
+    extracted_last_name := trim(regexp_replace(full_name_from_oauth, '^\S+\s*', ''));
+    
+    -- If last name is empty after splitting, set it to empty string
+    IF extracted_last_name = extracted_first_name THEN
+      extracted_last_name := '';
+    END IF;
+  ELSE
+    -- Fallback to individual first_name and last_name fields
+    extracted_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1));
+    extracted_last_name := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
+  END IF;
+  
+  -- Ensure we have at least a first name
+  IF extracted_first_name IS NULL OR trim(extracted_first_name) = '' THEN
+    extracted_first_name := split_part(NEW.email, '@', 1);
+  END IF;
+  
   INSERT INTO profiles (id, first_name, last_name, email, college_name)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', SPLIT_PART(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    extracted_first_name,
+    COALESCE(extracted_last_name, ''),
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'college_name', '')
   )

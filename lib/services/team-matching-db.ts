@@ -180,7 +180,10 @@ export class TeamMatchingService {
     // Start transaction
     const { data: newTeam, error: teamError } = await supabaseAdmin
       .from('teams')
-      .insert(team)
+      .insert({
+        ...team,
+        approval_status: 'team_formed' // Set default status to team_formed instead of pending
+      })
       .select()
       .single()
 

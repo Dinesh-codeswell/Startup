@@ -40,20 +40,42 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
     }
   }, [])
 
+  // Auto-refresh dashboard data every 30 seconds for real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !formingTeams) {
+        console.log('Auto-refreshing dashboard data...')
+        loadDashboardData()
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [loading, formingTeams])
+
   const loadDashboardData = async () => {
     try {
       setLoading(true)
       setError(null)
 
       // Load stats
-      const statsResponse = await fetch('/api/team-matching/stats')
+      const statsResponse = await fetch('/api/team-matching/stats', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
         setStats(statsData.data)
       }
 
       // Load truly unmatched participants (not in any team)
-      const submissionsResponse = await fetch('/api/team-matching/unmatched-submissions')
+      const submissionsResponse = await fetch('/api/team-matching/unmatched-submissions', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (submissionsResponse.ok) {
         const submissionsData = await submissionsResponse.json()
         const unmatchedSubmissions = submissionsData.data || []
@@ -74,6 +96,32 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
       setError('Failed to load dashboard data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadDashboardDataWithRetry = async (maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Loading dashboard data (attempt ${attempt}/${maxRetries})...`)
+        await loadDashboardData()
+        
+        // Verify that the data has actually updated
+        if (stats && submissions) {
+          console.log('Dashboard data loaded successfully')
+          return
+        }
+        
+        if (attempt < maxRetries) {
+          console.log('Data may not be fully updated, retrying...')
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error)
+        if (attempt === maxRetries) {
+          throw error
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      }
     }
   }
 
@@ -181,11 +229,16 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
         // Show success message
         if (data.data) {
           const { teamsFormed, participantsMatched, participantsUnmatched, totalParticipants, previouslyMatched } = data.data
-          alert(`✅ Team Formation Successful!\n\n• New teams formed: ${teamsFormed}\n• Participants newly matched: ${participantsMatched}\n• Participants still unmatched: ${participantsUnmatched}\n• Total processed: ${totalParticipants}\n• Previously matched: ${previouslyMatched || 0}\n\nDashboard will refresh to show updated data.`)
+          alert(`✅ Team Formation Successful!\n\n• New teams formed: ${teamsFormed}\n• Participants newly matched: ${participantsMatched}\n• Participants still unmatched: ${participantsUnmatched}\n• Total processed: ${totalParticipants}\n• Previously matched: ${previouslyMatched || 0}\n\nThe dashboard will now refresh to show updated statistics.`)
+        } else {
+          alert('✅ Teams formed successfully! The dashboard will now refresh.')
         }
         
-        // Reload dashboard data
-        await loadDashboardData()
+        // Add a small delay to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Reload dashboard data with retry mechanism
+        await loadDashboardDataWithRetry()
         setError('')
       } else {
         console.error('Team formation error:', data)
@@ -270,6 +323,26 @@ export function TeamMatchingDashboard({ className }: TeamMatchingDashboardProps)
             className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
           >
             Add Test Data
+          </Button>
+          <Button 
+            onClick={() => loadDashboardDataWithRetry()}
+            disabled={loading}
+            variant="outline"
+            className="bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-300"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </>
+            )}
           </Button>
           <Button 
             onClick={handleFormTeams}

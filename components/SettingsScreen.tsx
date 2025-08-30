@@ -26,7 +26,7 @@ export default function SettingsScreen({
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [requestReason, setRequestReason] = useState("")
-  const [requestDetails, setRequestDetails] = useState("")
+
   const [reportMessage, setReportMessage] = useState("")
   const [showSuccessMessage, setShowSuccessMessage] = useState("")
   const [selectedMember, setSelectedMember] = useState<any>(null)
@@ -84,10 +84,7 @@ export default function SettingsScreen({
       return
     }
 
-    if (requestDetails && requestDetails.length > 2000) {
-      setError("Details must not exceed 2000 characters")
-      return
-    }
+
 
     try {
       const response = await fetch('/api/team-change-request', {
@@ -100,7 +97,7 @@ export default function SettingsScreen({
           teamId: teamData?.id || teamData?.team?.id,
           requestType: 'leave_team', // Default type, could be made dynamic
           reason: requestReason.trim(),
-          details: requestDetails.trim() || null
+
         })
       })
 
@@ -112,7 +109,7 @@ export default function SettingsScreen({
 
       setShowRequestModal(false)
       setRequestReason("")
-      setRequestDetails("")
+
       setError("")
       setShowSuccessMessage("Your team change request has been submitted successfully!")
       setTimeout(() => setShowSuccessMessage(""), 3000)
@@ -565,14 +562,8 @@ export default function SettingsScreen({
         {showRequestModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 px-4 py-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Request Team Change</h3>
-                <button
-                  onClick={() => setShowRequestModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
               </div>
               <div className="space-y-4">
                 <div>
@@ -585,18 +576,15 @@ export default function SettingsScreen({
                   />
                   <p className="text-xs text-gray-500 mt-1">{requestReason.length}/500 characters</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (Optional)</label>
-                  <textarea
-                    value={requestDetails}
-                    onChange={(e) => setRequestDetails(e.target.value)}
-                    placeholder="Any additional details or context (max 2000 characters)..."
-                    className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{requestDetails.length}/2000 characters</p>
-                </div>
+
               </div>
               <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleSubmitRequest}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -611,14 +599,8 @@ export default function SettingsScreen({
         {showReportModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 px-4 py-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Report an Issue</h3>
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
               </div>
               <textarea
                 value={reportMessage}
@@ -627,6 +609,12 @@ export default function SettingsScreen({
                 className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleSubmitReport}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

@@ -83,7 +83,7 @@ export default function DashboardScreen({
   const [tasksLoading, setTasksLoading] = useState(true)
   const [tasksError, setTasksError] = useState<string | null>(null)
   const [requestReason, setRequestReason] = useState("")
-  const [requestDetails, setRequestDetails] = useState("")
+
   const [error, setError] = useState("")
   
   // Show loading state if user authentication is still being determined
@@ -164,11 +164,6 @@ export default function DashboardScreen({
       return
     }
 
-    if (requestDetails && requestDetails.length > 2000) {
-      setError("Details must not exceed 2000 characters")
-      return
-    }
-
     try {
       const response = await fetch('/api/team-change-request', {
         method: 'POST',
@@ -179,8 +174,7 @@ export default function DashboardScreen({
           userId: currentUser?.id,
           teamId: currentTeamData?.id || currentTeamData?.team?.id,
           requestType: 'leave_team',
-          reason: requestReason.trim(),
-          details: requestDetails.trim() || null
+          reason: requestReason.trim()
         })
       })
 
@@ -192,7 +186,6 @@ export default function DashboardScreen({
 
       setShowRequestModal(false)
       setRequestReason("")
-      setRequestDetails("")
       setError("")
       setShowSuccessMessage("Your team change request has been submitted successfully!")
       setTimeout(() => setShowSuccessMessage(""), 3000)
@@ -640,14 +633,8 @@ export default function DashboardScreen({
       {showRequestModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <h3 className="text-lg font-semibold">Request Team Change</h3>
-              <button
-                onClick={() => setShowRequestModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
             </div>
             <div className="space-y-4">
               <div>
@@ -662,18 +649,7 @@ export default function DashboardScreen({
                   placeholder="Please describe why you want to change teams..."
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Additional details (optional)
-                </label>
-                <textarea
-                  value={requestDetails}
-                  onChange={(e) => setRequestDetails(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Any additional information..."
-                />
-              </div>
+
               {error && (
                 <div className="text-red-600 text-sm">
                   {error}
@@ -685,7 +661,6 @@ export default function DashboardScreen({
                 onClick={() => {
                   setShowRequestModal(false)
                   setRequestReason("")
-                  setRequestDetails("")
                   setError("")
                 }}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -707,14 +682,8 @@ export default function DashboardScreen({
       {showReportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <h3 className="text-lg font-semibold">Report an Issue</h3>
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
             </div>
             <div className="space-y-4">
               <div>

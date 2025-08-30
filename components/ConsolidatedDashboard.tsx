@@ -1000,14 +1000,8 @@ export default function ConsolidatedDashboard({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md">
             <div className="p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="text-base lg:text-lg font-semibold text-gray-900">Request Team Change</h3>
-                <button
-                  onClick={() => setShowRequestModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors touch-manipulation"
-                >
-                  <X size={20} />
-                </button>
               </div>
               <textarea
                 value={reportMessage}
@@ -1033,14 +1027,8 @@ export default function ConsolidatedDashboard({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md">
             <div className="p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="text-base lg:text-lg font-semibold text-gray-900">Report an Issue</h3>
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors touch-manipulation"
-                >
-                  <X size={20} />
-                </button>
               </div>
               <textarea
                 value={reportMessage}

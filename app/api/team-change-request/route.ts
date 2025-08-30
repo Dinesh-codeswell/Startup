@@ -12,8 +12,7 @@ export async function POST(request: NextRequest) {
       userId, 
       teamId, 
       requestType, 
-      reason,
-      details
+      reason
     } = body
 
     // Validate required fields
@@ -41,12 +40,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (details && details.length > 2000) {
-      return NextResponse.json(
-        { error: 'Details must not exceed 2000 characters' },
-        { status: 400 }
-      )
-    }
+
 
     // Use provided teamId or null if not provided
     const userTeamId = teamId || null
@@ -58,8 +52,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         team_id: userTeamId,
         request_type: requestType,
-        reason: reason.trim(),
-        details: details?.trim() || null
+        reason: reason.trim()
       })
       .select()
       .single()
@@ -150,7 +143,7 @@ export async function GET(request: NextRequest) {
         teamId: request.team_id,
         teamName: team?.team_name || 'No Team',
         requestType: request.request_type,
-        message: `${request.reason}${request.details ? '\n\nDetails: ' + request.details : ''}`,
+        message: request.reason,
         status: request.status,
         adminResponse: request.admin_response,
         createdAt: request.created_at,

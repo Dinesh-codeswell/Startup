@@ -18,7 +18,11 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const teamId = teamData?.team?.id
+  
+  // Calculate team member count from teamData
+  const memberCount = teamData?.members?.length || teamData?.team?.team_size || 0
   
 
 
@@ -123,6 +127,23 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
     }
   }, [showEmojiPicker])
 
+  // Calculate unread messages count
+  const calculateUnreadCount = (messages: any[]) => {
+    if (!currentUser?.id) return 0
+    
+    // Count messages from other users that are newer than a reasonable timeframe
+    // In a real implementation, this would use last read timestamp from user preferences
+    const now = new Date().getTime()
+    const oneDayAgo = now - (24 * 60 * 60 * 1000) // 24 hours ago
+    
+    return messages.filter(msg => {
+      const messageTime = new Date(msg.created_at).getTime()
+      return msg.sender_id !== currentUser.id && 
+             messageTime > oneDayAgo &&
+             msg.message_type !== 'system'
+    }).length
+  }
+
   const loadMessages = async (isInitialLoad = false) => {
     if (!teamId || !currentUser?.id) return
     
@@ -137,9 +158,12 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
       
       if (data.success) {
         const newMessages = data.data.messages || []
+        let finalMessages: any[]
+        
         if (isInitialLoad) {
           // For initial load, replace all messages
           setChatMessages(newMessages)
+          finalMessages = newMessages
         } else {
           // For refresh, deduplicate and merge
           setChatMessages(prev => {
@@ -148,11 +172,23 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
             prev.forEach(msg => messageMap.set(msg.id, msg))
             // Add/update with new messages
             newMessages.forEach(msg => messageMap.set(msg.id, msg))
-            return Array.from(messageMap.values()).sort((a, b) => 
+            const merged = Array.from(messageMap.values()).sort((a, b) => 
               new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             )
+            finalMessages = merged
+            return merged
           })
         }
+        
+        // Calculate and update unread count
+        const newUnreadCount = calculateUnreadCount(finalMessages || newMessages)
+        setUnreadCount(newUnreadCount)
+        
+        // Notify parent component of unread count change
+        if (onUnreadCountChange) {
+          onUnreadCountChange(newUnreadCount)
+        }
+        
         setError(null)
       } else {
         setError(data.error || 'Failed to load messages')
@@ -172,6 +208,22 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatMessages])
+
+  // Reset unread count when user is viewing the chat (component is mounted)
+  useEffect(() => {
+    // Reset unread count when component mounts (user is viewing chat)
+    setUnreadCount(0)
+    if (onUnreadCountChange) {
+      onUnreadCountChange(0)
+    }
+
+    // Set up interval to refresh messages and update counts
+    const interval = setInterval(() => {
+      loadMessages(false)
+    }, 10000) // Refresh every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [teamId, currentUser?.id])
 
   const handleEmojiClick = (emoji: string) => {
     setNewMessage((prev) => prev + emoji)
@@ -255,7 +307,9 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
     <div className="flex flex-col h-full bg-white">
       <div className="px-6 py-4 border-b bg-white border-r border-slate-400 border-l-0 border-t-0 rounded">
         <h2 className="text-xl font-semibold text-gray-900">Team Chat</h2>
-        <p className="text-sm text-gray-500 mt-1">4 members • 3 unread messages</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {memberCount} {memberCount === 1 ? 'member' : 'members'} • {unreadCount} unread {unreadCount === 1 ? 'message' : 'messages'}
+        </p>
       </div>
 
       <div className="flex-1 overflow-hidden">

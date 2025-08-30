@@ -320,6 +320,18 @@ const TeamDashboard = ({ userStatus }) => {
             }
           })
 
+          // Fetch real team insights
+          let realInsights = mockTeamData.insights; // Fallback to mock data
+          try {
+            const insightsResponse = await fetch(`/api/team/insights?team_id=${userStatus.team.id}`);
+            if (insightsResponse.ok) {
+              const insightsData = await insightsResponse.json();
+              realInsights = insightsData;
+            }
+          } catch (error) {
+            console.error('Error fetching team insights:', error);
+          }
+
           const realTeamData = {
             team: {
               id: userStatus.team.id,
@@ -330,7 +342,7 @@ const TeamDashboard = ({ userStatus }) => {
               compatibilityScore: userStatus.team.compatibility_score
             },
             members: transformedMembers,
-            insights: mockTeamData.insights, // Use mock insights for now
+            insights: realInsights,
 
             tasks: [], // Empty tasks initially
             chatMessages: [], // Empty chat initially
@@ -631,6 +643,7 @@ const TeamDashboard = ({ userStatus }) => {
                 setEditedTeamName={setEditedTeamName}
                 handleSubmit={handleSubmit}
                 handleSaveTeamName={handleSaveTeamName}
+                teamId={userStatus?.team?.id}
               />
             )}
             {activeRoute === "chat" && (

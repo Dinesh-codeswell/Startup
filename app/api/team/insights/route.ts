@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate insights from team data
-    const insights = calculateTeamInsights(teamMembers || [])
+    const insights = await calculateTeamInsights(teamMembers || [], teamId)
 
     return NextResponse.json({
       success: true,
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateTeamInsights(teamMembers: any[]) {
+async function calculateTeamInsights(teamMembers: any[], teamId: string) {
   if (!teamMembers || teamMembers.length === 0) {
     return getDefaultInsights()
   }
@@ -95,29 +95,60 @@ function calculateTeamInsights(teamMembers: any[]) {
   // Analyze availability
   const availabilityLevels = submissions.map(s => categorizeAvailability(s.availability))
   
+  // Fetch advanced team strengths analysis
+  let advancedStrengthsAnalysis = null;
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/team-strengths-analysis?team_id=${teamId}`);
+    if (response.ok) {
+      advancedStrengthsAnalysis = await response.json();
+    }
+  } catch (error) {
+    console.error('Error fetching advanced team strengths analysis:', error);
+  }
+  
+  // Use advanced analysis if available, otherwise fall back to basic analysis
+  const strengthsAnalysis = advancedStrengthsAnalysis ? {
+    coreStrengths: analyzeCoreStrengths(submissions), // Keep existing core strengths format
+    teamComplementarity: {
+      score: advancedStrengthsAnalysis.complementarity_score || calculateComplementarityScore(submissions),
+      description: advancedStrengthsAnalysis.complementarity_description || "Team analysis based on member skills and experience",
+      strengths: advancedStrengthsAnalysis.key_observations ? [advancedStrengthsAnalysis.key_observations] : ["Diverse skill set", "Good collaboration potential"],
+      opportunities: ["Continue developing complementary skills"]
+    },
+    uniqueStrengths: analyzeUniqueStrengths(submissions),
+    skillCoverage: {
+      consulting: advancedStrengthsAnalysis.skill_coverage?.consulting || calculateSkillCoverage(allStrengths, ['Strategic Thinking', 'Leadership', 'Problem Solving']),
+      technology: advancedStrengthsAnalysis.skill_coverage?.technology || calculateSkillCoverage(allStrengths, ['Technical', 'Programming', 'Data Analysis']),
+      finance: advancedStrengthsAnalysis.skill_coverage?.finance || calculateSkillCoverage(allStrengths, ['Financial', 'Analytics', 'Modeling']),
+      marketing: advancedStrengthsAnalysis.skill_coverage?.marketing || calculateSkillCoverage(allStrengths, ['Marketing', 'Creative', 'Communication']),
+      design: advancedStrengthsAnalysis.skill_coverage?.design || calculateSkillCoverage(allStrengths, ['Design', 'UI/UX', 'Creative'])
+    }
+  } : {
+    coreStrengths: analyzeCoreStrengths(submissions),
+    teamComplementarity: {
+      score: calculateComplementarityScore(submissions),
+      description: "Team analysis based on member skills and experience",
+      strengths: ["Diverse skill set", "Good collaboration potential"],
+      opportunities: ["Continue developing complementary skills"]
+    },
+    uniqueStrengths: analyzeUniqueStrengths(submissions),
+    skillCoverage: {
+      consulting: calculateSkillCoverage(allStrengths, ['Strategic Thinking', 'Leadership', 'Problem Solving']),
+      technology: calculateSkillCoverage(allStrengths, ['Technical', 'Programming', 'Data Analysis']),
+      finance: calculateSkillCoverage(allStrengths, ['Financial', 'Analytics', 'Modeling']),
+      marketing: calculateSkillCoverage(allStrengths, ['Marketing', 'Creative', 'Communication']),
+      design: calculateSkillCoverage(allStrengths, ['Design', 'UI/UX', 'Creative'])
+    }
+  };
+  
   return {
     skillsDistribution: calculateDistribution(skillCategories),
     experienceMix: calculateDistribution(experienceLevels),
     availabilityMix: calculateDistribution(availabilityLevels),
     caseTypes: ["Consulting", "Product/Tech", "Marketing", "Finance"],
     topStrengths: getTopStrengths(allStrengths),
-    strengthsAnalysis: {
-      coreStrengths: analyzeCoreStrengths(submissions),
-      teamComplementarity: {
-        score: calculateComplementarityScore(submissions),
-        description: "Team analysis based on member skills and experience",
-        strengths: ["Diverse skill set", "Good collaboration potential"],
-        opportunities: ["Continue developing complementary skills"]
-      },
-      uniqueStrengths: analyzeUniqueStrengths(submissions),
-      skillCoverage: {
-        consulting: calculateSkillCoverage(allStrengths, ['Strategic Thinking', 'Leadership', 'Problem Solving']),
-        technology: calculateSkillCoverage(allStrengths, ['Technical', 'Programming', 'Data Analysis']),
-        finance: calculateSkillCoverage(allStrengths, ['Financial', 'Analytics', 'Modeling']),
-        marketing: calculateSkillCoverage(allStrengths, ['Marketing', 'Creative', 'Communication']),
-        design: calculateSkillCoverage(allStrengths, ['Design', 'UI/UX', 'Creative'])
-      }
-    }
+    strengthsAnalysis
   }
 }
 

@@ -49,6 +49,34 @@ export default function DashboardScreen({
   handleSaveTeamName,
   teamId,
 }: DashboardScreenProps) {
+  // Team Strengths Analysis state
+  const [strengthsAnalysis, setStrengthsAnalysis] = useState(null)
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false)
+
+  // Load team strengths analysis
+  useEffect(() => {
+    const loadTeamAnalysis = async () => {
+      if (!teamId) return
+      
+      setIsLoadingAnalysis(true)
+      try {
+        const response = await fetch(`/api/team-strengths-analysis?team_id=${teamId}`)
+        if (response.ok) {
+          const result = await response.json()
+          console.log('Team analysis API response:', result)
+          setStrengthsAnalysis(result.success ? result.data : null)
+        } else {
+          console.error('Failed to load team analysis:', response.statusText)
+        }
+      } catch (error) {
+        console.error('Error loading team analysis:', error)
+      } finally {
+        setIsLoadingAnalysis(false)
+      }
+    }
+
+    loadTeamAnalysis()
+  }, [teamId])
   const [showMemberModal, setShowMemberModal] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TeamMemberDisplay | null>(null)
   const [tasks, setTasks] = useState<any[]>([])
@@ -379,41 +407,94 @@ export default function DashboardScreen({
               <div className="rounded-lg p-4 bg-blue-50 border border-blue-200">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-base lg:text-lg font-medium text-gray-900">Team Complementarity</h4>
-                  <span className="font-bold text-green-600 text-xl lg:text-2xl">85/100</span>
+                  {isLoadingAnalysis ? (
+                    <div className="animate-pulse bg-gray-300 h-6 w-16 rounded"></div>
+                  ) : (
+                    <span className="font-bold text-green-600 text-xl lg:text-2xl">
+                      {strengthsAnalysis?.teamComplementarity?.score || 0}/100
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs lg:text-sm text-gray-600 mb-4">
-                  Excellent balance between strategic, analytical, creative, and technical skills
+                  {isLoadingAnalysis ? (
+                    <div className="animate-pulse bg-gray-300 h-4 w-full rounded"></div>
+                  ) : (
+                    strengthsAnalysis?.teamComplementarity?.description || "Loading team analysis..."
+                  )}
                 </p>
                 <div className="space-y-2 text-xs lg:text-sm">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-gray-700">Well-rounded skill coverage</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-gray-700">Strong analytical foundation</span>
-                  </div>
+                  {isLoadingAnalysis ? (
+                    <div className="space-y-2">
+                      <div className="animate-pulse bg-gray-300 h-3 w-3/4 rounded"></div>
+                      <div className="animate-pulse bg-gray-300 h-3 w-2/3 rounded"></div>
+                    </div>
+                  ) : (
+                    strengthsAnalysis?.teamComplementarity?.keyObservations?.map((observation, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span className="text-gray-700">{observation}</span>
+                      </div>
+                    )) || (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-400 font-bold">-</span>
+                        <span className="text-gray-500">No analysis available</span>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
             <div>
               <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">Skill Coverage by Domain</h4>
               <div className="space-y-3 lg:space-y-4">
-                {[
-                  { skill: "Consulting", percentage: 90, color: "bg-green-500" },
-                  { skill: "Technology", percentage: 65, color: "bg-yellow-500" },
-                  { skill: "Finance", percentage: 85, color: "bg-green-500" },
-                  { skill: "Marketing", percentage: 55, color: "bg-red-500" },
-                  { skill: "Design", percentage: 80, color: "bg-green-500" },
-                ].map((item) => (
-                  <div key={item.skill} className="flex items-center space-x-3">
-                    <span className="text-xs lg:text-sm font-medium text-gray-700 w-16 lg:w-20 flex-shrink-0">{item.skill}</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2 lg:h-3">
-                      <div className={`h-2 lg:h-3 rounded-full ${item.color}`} style={{ width: `${item.percentage}%` }}></div>
+                {isLoadingAnalysis ? (
+                  // Loading skeleton
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="animate-pulse bg-gray-300 h-4 w-16 lg:w-20 rounded"></div>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2 lg:h-3">
+                        <div className="animate-pulse bg-gray-300 h-2 lg:h-3 rounded-full w-1/2"></div>
+                      </div>
+                      <div className="animate-pulse bg-gray-300 h-4 w-8 rounded"></div>
                     </div>
-                    <span className="text-xs lg:text-sm font-medium text-gray-900 w-8 flex-shrink-0">{item.percentage}%</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  [
+                    { 
+                      skill: "Consulting", 
+                      percentage: Math.round(strengthsAnalysis?.skillCoverage?.consulting || 0), 
+                      color: (strengthsAnalysis?.skillCoverage?.consulting || 0) >= 70 ? "bg-green-500" : (strengthsAnalysis?.skillCoverage?.consulting || 0) >= 40 ? "bg-yellow-500" : "bg-red-500" 
+                    },
+                    { 
+                      skill: "Technology", 
+                      percentage: Math.round(strengthsAnalysis?.skillCoverage?.technology || 0), 
+                      color: (strengthsAnalysis?.skillCoverage?.technology || 0) >= 70 ? "bg-green-500" : (strengthsAnalysis?.skillCoverage?.technology || 0) >= 40 ? "bg-yellow-500" : "bg-red-500" 
+                    },
+                    { 
+                      skill: "Finance", 
+                      percentage: Math.round(strengthsAnalysis?.skillCoverage?.finance || 0), 
+                      color: (strengthsAnalysis?.skillCoverage?.finance || 0) >= 70 ? "bg-green-500" : (strengthsAnalysis?.skillCoverage?.finance || 0) >= 40 ? "bg-yellow-500" : "bg-red-500" 
+                    },
+                    { 
+                      skill: "Marketing", 
+                      percentage: Math.round(strengthsAnalysis?.skillCoverage?.marketing || 0), 
+                      color: (strengthsAnalysis?.skillCoverage?.marketing || 0) >= 70 ? "bg-green-500" : (strengthsAnalysis?.skillCoverage?.marketing || 0) >= 40 ? "bg-yellow-500" : "bg-red-500" 
+                    },
+                    { 
+                      skill: "Design", 
+                      percentage: Math.round(strengthsAnalysis?.skillCoverage?.design || 0), 
+                      color: (strengthsAnalysis?.skillCoverage?.design || 0) >= 70 ? "bg-green-500" : (strengthsAnalysis?.skillCoverage?.design || 0) >= 40 ? "bg-yellow-500" : "bg-red-500" 
+                    },
+                  ].map((item) => (
+                    <div key={item.skill} className="flex items-center space-x-3">
+                      <span className="text-xs lg:text-sm font-medium text-gray-700 w-16 lg:w-20 flex-shrink-0">{item.skill}</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2 lg:h-3">
+                        <div className={`h-2 lg:h-3 rounded-full ${item.color}`} style={{ width: `${item.percentage}%` }}></div>
+                      </div>
+                      <span className="text-xs lg:text-sm font-medium text-gray-900 w-8 flex-shrink-0">{item.percentage}%</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

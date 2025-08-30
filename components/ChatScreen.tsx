@@ -123,11 +123,11 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
     }
   }, [showEmojiPicker])
 
-  const loadMessages = async () => {
+  const loadMessages = async (isInitialLoad = false) => {
     if (!teamId || !currentUser?.id) return
     
     try {
-      setLoading(true)
+      if (isInitialLoad) setLoading(true)
       const response = await fetch(`/api/team-chat/messages?team_id=${teamId}&limit=50`, {
         headers: {
           'x-user-id': currentUser.id
@@ -136,7 +136,23 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
       const data = await response.json()
       
       if (data.success) {
-        setChatMessages(data.data.messages || [])
+        const newMessages = data.data.messages || []
+        if (isInitialLoad) {
+          // For initial load, replace all messages
+          setChatMessages(newMessages)
+        } else {
+          // For refresh, deduplicate and merge
+          setChatMessages(prev => {
+            const messageMap = new Map()
+            // Add existing messages
+            prev.forEach(msg => messageMap.set(msg.id, msg))
+            // Add/update with new messages
+            newMessages.forEach(msg => messageMap.set(msg.id, msg))
+            return Array.from(messageMap.values()).sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            )
+          })
+        }
         setError(null)
       } else {
         setError(data.error || 'Failed to load messages')
@@ -145,12 +161,12 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
       console.error('Error loading messages:', err)
       setError('Failed to load messages')
     } finally {
-      setLoading(false)
+      if (isInitialLoad) setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadMessages()
+    loadMessages(true)
   }, [teamId])
 
   useEffect(() => {
@@ -168,6 +184,31 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
 
   const handleSendMessage = async () => {
     if (newMessage.trim() && teamId && currentUser?.id) {
+      const messageText = newMessage.trim()
+      const tempId = `temp-${Date.now()}`
+      
+      // Create optimistic message object
+      const optimisticMessage = {
+        id: tempId,
+        message_text: messageText,
+        sender_id: currentUser.id,
+        sender_name: currentUser.full_name || currentUser.name || 'You',
+        sender_avatar: currentUser.avatar_url,
+        created_at: new Date().toISOString(),
+        team_id: teamId
+      }
+      
+      // Immediately add message to UI (check for duplicates first)
+      setChatMessages(prev => {
+        const isDuplicate = prev.some(msg => 
+          msg.message_text === messageText && 
+          msg.sender_id === currentUser.id &&
+          Math.abs(new Date(msg.created_at).getTime() - new Date().getTime()) < 5000
+        )
+        return isDuplicate ? prev : [...prev, optimisticMessage]
+      })
+      setNewMessage('')
+      
       try {
         const response = await fetch('/api/team-chat/messages', {
           method: 'POST',
@@ -177,20 +218,35 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
           },
           body: JSON.stringify({
             team_id: teamId,
-            message_text: newMessage.trim()
+            message_text: messageText
           })
         })
         
         const data = await response.json()
         if (data.success) {
-          setNewMessage('')
-          await loadMessages()
+          // Replace optimistic message with real message from server
+          const serverMessage = data.data?.message || data.data
+          setChatMessages(prev => 
+            prev.map(msg => 
+              msg.id === tempId ? {
+                ...serverMessage,
+                sender_name: optimisticMessage.sender_name,
+                sender_avatar: optimisticMessage.sender_avatar
+              } : msg
+            )
+          )
         } else {
+          // Remove optimistic message on failure
+          setChatMessages(prev => prev.filter(msg => msg.id !== tempId))
           setError(data.error || 'Failed to send message')
+          setNewMessage(messageText) // Restore message text
         }
       } catch (error) {
         console.error('Error sending message:', error)
+        // Remove optimistic message on failure
+        setChatMessages(prev => prev.filter(msg => msg.id !== tempId))
         setError('Failed to send message')
+        setNewMessage(messageText) // Restore message text
       }
     }
   }
@@ -214,11 +270,12 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
             </div>
           ) : (
             <div className="space-y-6">
-              {chatMessages.map((msg) => {
+              {chatMessages.map((msg, index) => {
                  const isCurrentUser = msg.sender_id === currentUser?.id
+                 const messageKey = msg.id || `msg-${index}-${msg.created_at}`
                 return (
                   <div
-                    key={msg.id}
+                    key={messageKey}
                     className={`flex items-start space-x-3 ${isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
                   >
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700">
@@ -233,14 +290,16 @@ export default function ChatScreen({ teamData, currentUser, onUnreadCountChange 
                         className={`flex items-center space-x-2 mb-2 ${isCurrentUser ? "flex-row-reverse space-x-reverse" : ""}`}
                       >
                         <span className="font-medium text-gray-900 text-sm">{msg.sender_name || 'Unknown'}</span>
-                        <span className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleTimeString()}</span>
+                        <span className="text-xs text-gray-500">
+                          {msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : 'Now'}
+                        </span>
                       </div>
                       <div
                         className={`inline-block rounded-2xl px-4 py-3 max-w-md ${
                           isCurrentUser ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
                         }`}
                       >
-                        <p className="text-sm leading-relaxed">{msg.message_text}</p>
+                        <p className="text-sm leading-relaxed">{msg.message_text || ''}</p>
                       </div>
                     </div>
                   </div>
